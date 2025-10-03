@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TapBlok</string>
+    <string name="title_activity_blocking">BlockingActivity</string>
+    <string name="title_activity_app_selection">AppSelectionActivity</string>
+</resources>
