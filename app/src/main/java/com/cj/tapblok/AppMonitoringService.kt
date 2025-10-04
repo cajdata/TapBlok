@@ -60,22 +60,21 @@ class AppMonitoringService : Service() {
         startForeground(NOTIFICATION_ID, notification)
 
         serviceScope.launch {
-            // Call the suspend function that returns a List
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
 
             while (isActive) {
-                // Check if we still have the necessary permissions. If not, stop the service.
                 if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(this@AppMonitoringService)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
-                    stopSelf() // This will trigger onDestroy and stop the service gracefully
-                    break // Exit the loop
+                    stopSelf()
+                    break
                 }
 
                 val foregroundApp = getForegroundApp()
                 Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                if (foregroundApp != null && foregroundApp in blockedApps) {
+                // THE FIX IS HERE: Add a check to ensure we don't block our own app
+                if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
                     val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
