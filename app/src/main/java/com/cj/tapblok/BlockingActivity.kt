@@ -1,5 +1,6 @@
 package com.cj.tapblok
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
@@ -42,6 +43,13 @@ class BlockingActivity : ComponentActivity() {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         }
                         startActivity(intent)
+                    },
+                    onTakeBreakClick = {
+                        val breakIntent = Intent(this, AppMonitoringService::class.java).apply {
+                            action = AppMonitoringService.ACTION_START_BREAK
+                        }
+                        startService(breakIntent)
+                        finish() // Close the blocking screen
                     }
                 )
             }
@@ -50,19 +58,27 @@ class BlockingActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        // THE FIX IS HERE: This ensures the activity is destroyed when the user navigates away.
         finish()
     }
 }
 
 @Composable
-fun BlockingScreen(packageName: String, onGoHomeClick: () -> Unit) {
+fun BlockingScreen(
+    packageName: String,
+    onGoHomeClick: () -> Unit,
+    onTakeBreakClick: () -> Unit
+) {
     val context = LocalContext.current
 
     var appName by remember { mutableStateOf(packageName) }
     var appIcon by remember { mutableStateOf<Drawable?>(null) }
+    var breaksRemaining by remember { mutableStateOf(0) }
 
-    LaunchedEffect(key1 = packageName) {
+    // Use a LaunchedEffect that re-runs when the activity is resumed
+    LaunchedEffect(key1 = Unit) {
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        breaksRemaining = prefs.getInt("breaks_remaining", 0)
+
         val pm = context.packageManager
         try {
             val appInfo = pm.getApplicationInfo(packageName, 0)
@@ -99,6 +115,19 @@ fun BlockingScreen(packageName: String, onGoHomeClick: () -> Unit) {
             Spacer(modifier = Modifier.height(48.dp))
             Button(onClick = onGoHomeClick) {
                 Text(text = "Go Home")
+            }
+
+            // Only show the "Take a Break" button if there are breaks remaining
+            if (breaksRemaining > 0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    // Decrement the break counter in SharedPreferences
+                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                    prefs.edit().putInt("breaks_remaining", breaksRemaining - 1).apply()
+                    onTakeBreakClick()
+                }) {
+                    Text(text = "Take a Break ($breaksRemaining remaining)")
+                }
             }
         }
     }
