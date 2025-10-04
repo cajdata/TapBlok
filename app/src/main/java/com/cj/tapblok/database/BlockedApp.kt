@@ -5,5 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "blocked_apps")
 data class BlockedApp(
-    @PrimaryKey val packageName: String
+    @PrimaryKey
+    val packageName: String
 )
+
