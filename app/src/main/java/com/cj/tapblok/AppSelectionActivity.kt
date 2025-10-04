@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,14 +28,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil.compose.rememberAsyncImagePainter
-import com.cj.tapblok.database.AppDatabase
 import com.cj.tapblok.database.BlockedApp
 import com.cj.tapblok.database.BlockedAppDao
 import com.cj.tapblok.ui.theme.TapBlokTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class AppInfo(
@@ -103,7 +103,6 @@ class AppSelectionViewModelFactory(private val application: Application, private
 
 class AppSelectionActivity : ComponentActivity() {
     private val viewModel: AppSelectionViewModel by viewModels {
-        // THE FIX IS HERE: Changed (application as? App) to (application as App)
         AppSelectionViewModelFactory(
             application,
             (application as App).database.blockedAppDao()
@@ -147,13 +146,19 @@ fun AppSelectionScreen(
     onAppCheckedChange: (AppInfo, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val isServiceRunning by rememberUpdatedState(
+        isServiceRunning(context, AppMonitoringService::class.java)
+    )
+
     LazyColumn(modifier = modifier.padding(all = 8.dp)) {
         items(apps, key = { it.packageName }) { app ->
             AppListItem(
                 app = app,
                 onCheckedChange = { isSelected ->
                     onAppCheckedChange(app, isSelected)
-                }
+                },
+                isEnabled = !isServiceRunning // Pass the enabled state to the list item
             )
         }
     }
@@ -162,13 +167,14 @@ fun AppSelectionScreen(
 @Composable
 fun AppListItem(
     app: AppInfo,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    isEnabled: Boolean
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!app.isSelected) }
+            .clickable(enabled = isEnabled) { onCheckedChange(!app.isSelected) } // Use the enabled parameter here
             .padding(vertical = 8.dp, horizontal = 8.dp)
     ) {
         Image(
@@ -185,7 +191,8 @@ fun AppListItem(
         Spacer(modifier = Modifier.width(16.dp))
         Checkbox(
             checked = app.isSelected,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            enabled = isEnabled // And also here
         )
     }
 }
