@@ -96,9 +96,12 @@ fun MainScreen() {
                     Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    context.startActivity(Intent(context, AppSelectionActivity::class.java))
-                }) {
+                Button(
+                    onClick = {
+                        context.startActivity(Intent(context, AppSelectionActivity::class.java))
+                    },
+                    enabled = !isServiceRunning // Disable the button if the service is running
+                ) {
                     Text("Manage Blocked Apps")
                 }
 
