@@ -1,13 +1,12 @@
 package com.cj.tapblok
 
 import android.app.AppOpsManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.os.CountDownTimer
 import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
@@ -27,10 +26,13 @@ class AppMonitoringService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private lateinit var db: AppDatabase
     private var blockedApps: List<String> = emptyList()
+    private var isBreakActive = false
+    private var breakTimer: CountDownTimer? = null
 
     companion object {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
+        const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
     }
 
     override fun onCreate() {
@@ -39,7 +41,18 @@ class AppMonitoringService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Handle the break intent
+        if (intent?.action == ACTION_START_BREAK) {
+            startBreak()
+            return START_NOT_STICKY // Don't restart the service if it's killed during a break
+        }
+
         Log.d("AppMonitoringService", "Service has started.")
+
+        // Reset the break counter at the beginning of each session
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        prefs.edit().putInt("breaks_remaining", 3).apply()
+
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
@@ -70,17 +83,19 @@ class AppMonitoringService : Service() {
                     break
                 }
 
-                val foregroundApp = getForegroundApp()
-                Log.d("AppMonitoringService", "Current App: $foregroundApp")
+                // If a break is not active, continue with the blocking logic
+                if (!isBreakActive) {
+                    val foregroundApp = getForegroundApp()
+                    Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                // THE FIX IS HERE: Add a check to ensure we don't block our own app
-                if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
-                    val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
+                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                        val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
+                        }
+                        startActivity(blockIntent)
+                        Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
                     }
-                    startActivity(blockIntent)
-                    Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
                 }
                 delay(1000)
             }
@@ -89,9 +104,26 @@ class AppMonitoringService : Service() {
         return START_STICKY
     }
 
+    private fun startBreak() {
+        isBreakActive = true
+        Log.d("AppMonitoringService", "Break started.")
+
+        breakTimer = object : CountDownTimer(300000, 1000) { // 5 minutes
+            override fun onTick(millisUntilFinished: Long) {
+                // Not needed for this implementation
+            }
+
+            override fun onFinish() {
+                isBreakActive = false
+                Log.d("AppMonitoringService", "Break finished.")
+            }
+        }.start()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
+        breakTimer?.cancel() // Make sure to cancel the timer when the service is destroyed
         Log.d("AppMonitoringService", "Service has been destroyed.")
     }
 
