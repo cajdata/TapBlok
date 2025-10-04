@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,16 +47,21 @@ class BlockingActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStop() {
+        super.onStop()
+        // THE FIX IS HERE: This ensures the activity is destroyed when the user navigates away.
+        finish()
+    }
 }
 
 @Composable
 fun BlockingScreen(packageName: String, onGoHomeClick: () -> Unit) {
-    val context = LocalContext.current // Get context here
+    val context = LocalContext.current
 
     var appName by remember { mutableStateOf(packageName) }
     var appIcon by remember { mutableStateOf<Drawable?>(null) }
 
-    // Use the context from LocalContext.current
     LaunchedEffect(key1 = packageName) {
         val pm = context.packageManager
         try {
