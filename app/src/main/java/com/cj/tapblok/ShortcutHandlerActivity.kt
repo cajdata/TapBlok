@@ -2,6 +2,7 @@ package com.cj.tapblok
 
 import android.app.Activity
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 
@@ -9,17 +10,23 @@ class ShortcutHandlerActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (intent?.action == "com.cj.tapblok.ACTION_START_FROM_SHORTCUT") {
-            // Check if the service is already running
-            if (!isServiceRunning(this, AppMonitoringService::class.java)) {
-                val serviceIntent = Intent(this, AppMonitoringService::class.java)
+        if (intent?.action == "com.cj.tapblok.START_MONITORING") {
+            val serviceIntent = Intent(this, AppMonitoringService::class.java)
+
+            // --- START OF CHANGES ---
+            // Add a version check to safely call the correct service-starting method.
+            // This resolves the "Call requires API level 26" error.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
-                Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Monitoring is already active.", Toast.LENGTH_SHORT).show()
+                startService(serviceIntent)
             }
+            // --- END OF CHANGES ---
+
+            Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
         }
-        // Finish immediately
+
+        // Finish the activity immediately as it has no UI
         finish()
     }
 }

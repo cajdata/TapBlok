@@ -3,6 +3,7 @@ package com.cj.tapblok
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -22,15 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-// --- START OF CHANGES ---
-// Use the new LocalLifecycleOwner from the lifecycle-runtime-compose library
-// to resolve the deprecation warning.
 import androidx.lifecycle.compose.LocalLifecycleOwner
-// --- END OF CHANGES ---
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.cj.tapblok.ui.theme.TapBlokTheme
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -151,13 +149,17 @@ fun MainScreen() {
                             context.stopService(serviceIntent)
                             isServiceRunning = false
                         } else {
-                            context.startForegroundService(serviceIntent)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                context.startForegroundService(serviceIntent)
+                            } else {
+                                context.startService(serviceIntent)
+                            }
                             isServiceRunning = true
                         }
                     },
                     enabled = !isServiceRunning
                 ) {
-                    Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
+                    Text(if (isServiceRunning) "Start Monitoring" else "Start Monitoring")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -198,7 +200,7 @@ fun MainScreen() {
                             }
                     ) {
                         LinearProgressIndicator(
-                            progress = holdProgress,
+                            progress = { holdProgress },
                             modifier = Modifier.fillMaxSize()
                         )
                         Text(
