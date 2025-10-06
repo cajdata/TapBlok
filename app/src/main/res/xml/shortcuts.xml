@@ -4,12 +4,12 @@
         android:shortcutId="start_session"
         android:enabled="true"
         android:icon="@mipmap/ic_launcher_round"
-        android:shortcutShortLabel="@string/shortcut_start_short_label"
-        android:shortcutLongLabel="@string/shortcut_start_long_label">
+        android:shortcutShortLabel="@string/shortcut_start_session_short_label"
+        android:shortcutLongLabel="@string/shortcut_start_session_long_label">
         <intent
-            android:action="com.cj.tapblok.ACTION_START_FROM_SHORTCUT"
+            android:action="com.cj.tapblok.START_MONITORING"
             android:targetPackage="com.cj.tapblok"
             android:targetClass="com.cj.tapblok.ShortcutHandlerActivity" />
-        <categories android:name="android.shortcut.conversation" />
     </shortcut>
 </shortcuts>
+

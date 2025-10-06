@@ -50,11 +50,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    // --- START OF CHANGES ---
-    // Updated to use the version catalog for Coil and Lifecycle
     implementation(libs.coil.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
-    // --- END OF CHANGES ---
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -66,11 +63,13 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    // --- START OF CHANGES ---
-    // Updated to use the version catalog for Room
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    // --- START OF CHANGES ---
+    // Added dependencies for QR code functionality
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.android.embedded)
     // --- END OF CHANGES ---
 }
 

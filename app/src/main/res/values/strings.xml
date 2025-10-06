@@ -2,7 +2,8 @@
     <string name="app_name">TapBlok</string>
     <string name="title_activity_blocking">BlockingActivity</string>
     <string name="title_activity_app_selection">AppSelectionActivity</string>
-    <string name="shortcut_start_short_label">Start Session</string>
-    <string name="shortcut_start_long_label">Start Monitoring Session</string>
+    <string name="shortcut_start_session_short_label">Start Session</string>
+    <string name="shortcut_start_session_long_label">Start a new monitoring session</string>
+    <string name="title_activity_qr_code">Your QR Code</string>
 </resources>
 
