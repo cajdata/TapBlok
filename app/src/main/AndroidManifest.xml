@@ -41,6 +41,12 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Add this meta-data tag to link the shortcuts file -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+
         </activity>
         <activity
             android:name=".NfcHandlerActivity"
@@ -67,6 +73,12 @@
             android:taskAffinity=""
             android:theme="@style/Theme.TapBlok" />
 
+        <!-- Add the declaration for the new ShortcutHandlerActivity -->
+        <activity
+            android:name=".ShortcutHandlerActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".AppMonitoringService"
             android:enabled="true"
@@ -88,3 +100,4 @@
     </application>
 
 </manifest>
+

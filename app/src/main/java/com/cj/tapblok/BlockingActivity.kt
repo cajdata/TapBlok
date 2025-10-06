@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
@@ -32,6 +33,22 @@ class BlockingActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val packageName = intent.getStringExtra("BLOCKED_APP_PACKAGE_NAME") ?: "An app"
+
+        // --- START OF CHANGES ---
+        // Override the back button behavior
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Instead of closing the blocking screen, go to the home screen.
+                // This prevents the user from returning to the blocked app.
+                val intent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                startActivity(intent)
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
+        // --- END OF CHANGES ---
 
         setContent {
             TapBlokTheme {
