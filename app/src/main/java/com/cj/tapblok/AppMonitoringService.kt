@@ -148,8 +148,9 @@ class AppMonitoringService : Service() {
     }
 
     private fun getForegroundApp(): String? {
+        val localContext = this
         var currentApp: String? = null
-        val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val usageStatsManager = localContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
         val appList = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
