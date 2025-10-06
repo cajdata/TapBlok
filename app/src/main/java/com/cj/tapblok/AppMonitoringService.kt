@@ -75,16 +75,14 @@ class AppMonitoringService : Service() {
 
         serviceScope.launch {
             // --- START OF CHANGES ---
-            // Create a local variable for the service context to use within the coroutine.
-            // This resolves the "redundant qualifier" lint warnings.
-            val context = this@AppMonitoringService
+            // Create a local context variable to resolve redundant qualifier warnings.
+            val localContext = this@AppMonitoringService
             // --- END OF CHANGES ---
-
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
 
             while (isActive) {
-                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(context)) {
+                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(localContext)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
                     stopSelf()
                     break
@@ -94,8 +92,8 @@ class AppMonitoringService : Service() {
                     val foregroundApp = getForegroundApp()
                     Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != context.packageName) {
-                        val blockIntent = Intent(context, BlockingActivity::class.java).apply {
+                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                        val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
                         }
@@ -103,9 +101,9 @@ class AppMonitoringService : Service() {
                         Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
 
                         val currentPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-                        val currentAttempts = currentPrefs.getInt("blocked_app_attempts", 0)
+                        val attempts = currentPrefs.getInt("blocked_app_attempts", 0)
                         currentPrefs.edit {
-                            putInt("blocked_app_attempts", currentAttempts + 1)
+                            putInt("blocked_app_attempts", attempts + 1)
                         }
                     }
                 }
@@ -120,9 +118,8 @@ class AppMonitoringService : Service() {
         isBreakActive = true
         Log.d("AppMonitoringService", "Break started.")
 
-        breakTimer = object : CountDownTimer(300000, 1000) { // 5 minutes
+        breakTimer = object : CountDownTimer(300000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                // Not needed for this implementation
             }
 
             override fun onFinish() {

@@ -44,17 +44,17 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    // --- START OF CHANGES ---
-    // Added for the new LocalLifecycleOwner to resolve the deprecation warning.
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
-    // --- END OF CHANGES ---
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    // --- START OF CHANGES ---
+    // Updated to use the version catalog for Coil and Lifecycle
+    implementation(libs.coil.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    // --- END OF CHANGES ---
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -66,9 +66,11 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    val room_version = "2.6.0"
-    implementation("androidx.room:room-runtime:$room_version")
-    ksp("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")
+    // --- START OF CHANGES ---
+    // Updated to use the version catalog for Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
+    // --- END OF CHANGES ---
 }
 
