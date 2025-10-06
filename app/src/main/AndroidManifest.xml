@@ -7,20 +7,10 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!--
-        The QUERY_ALL_PACKAGES permission has been removed.
-        The app can still get a list of launchable apps without this,
-        which is better for user privacy and Google Play policy compliance.
-    -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
-    <!--
-        NFC is now marked as not required. This means users on devices
-        without an NFC chip can still install and use the app with its
-        other features (like the in-app buttons and QR codes in the future).
-    -->
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="false" />
@@ -45,14 +35,11 @@
             android:theme="@style/Theme.TapBlok">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
-
         </activity>
         <activity
             android:name=".NfcHandlerActivity"
@@ -60,9 +47,7 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <data android:mimeType="application/vnd.com.cj.tapblok" />
             </intent-filter>
         </activity>
@@ -74,14 +59,23 @@
         <activity
             android:name=".BlockingActivity"
             android:exported="false"
+            android:label="@string/title_activity_blocking"
             android:launchMode="singleInstance"
             android:taskAffinity=""
             android:theme="@style/Theme.TapBlok" />
-
         <activity
             android:name=".ShortcutHandlerActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <activity
+            android:name=".QrCodeActivity"
+            android:exported="false"
+            android:label="@string/title_activity_qr_code"
+            android:theme="@style/Theme.TapBlok" />
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="portrait"
+            tools:replace="screenOrientation" />
 
         <service
             android:name=".AppMonitoringService"
@@ -102,6 +96,13 @@
             </intent-filter>
         </receiver>
     </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
 </manifest>
 
