@@ -34,7 +34,6 @@ import com.cj.tapblok.ui.theme.TapBlokTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class AppInfo(
@@ -60,17 +59,46 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             }
             val allApps = pm.queryIntentActivities(intent, 0)
 
+            // --- START OF CHANGES ---
+            // A comprehensive set of essential system apps that should not be blocked.
+            val excludedPackages = setOf(
+                // Phone & Messaging
+                "com.google.android.dialer",
+                "com.samsung.android.dialer",
+                "com.android.dialer",
+                "com.sonyericsson.android.socialphonebook",
+                "com.google.android.apps.messaging",
+                "com.samsung.android.messaging",
+                "com.android.mms",
+
+                // System UI & Core Services
+                "com.android.systemui",
+                "com.android.settings",
+
+                // Launchers
+                "com.google.android.apps.nexuslauncher", // Pixel Launcher
+                "com.sec.android.app.launcher",       // Samsung One UI Home
+                "net.oneplus.launcher",                // OnePlus Launcher
+                "com.android.launcher3",               // AOSP Launcher
+
+                // Package Installers
+                "com.google.android.packageinstaller",
+                "com.android.packageinstaller"
+            )
+            // --- END OF CHANGES ---
+
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
                 val appList = allApps.mapNotNull { app ->
-                    if (app.activityInfo.packageName == application.packageName) {
+                    val packageName = app.activityInfo.packageName
+                    if (packageName == application.packageName || excludedPackages.contains(packageName)) {
                         return@mapNotNull null
                     }
                     AppInfo(
                         appName = app.loadLabel(pm).toString(),
-                        packageName = app.activityInfo.packageName,
+                        packageName = packageName,
                         icon = app.loadIcon(pm),
-                        isSelected = blockedAppPackages.contains(app.activityInfo.packageName)
+                        isSelected = blockedAppPackages.contains(packageName)
                     )
                 }.sortedBy { it.appName.lowercase() }
 
@@ -79,6 +107,7 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
         }
     }
 
+
     fun onAppSelectionChanged(app: AppInfo, isSelected: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             if (isSelected) {
@@ -86,6 +115,19 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             } else {
                 blockedAppDao.delete(BlockedApp(packageName = app.packageName))
             }
+        }
+    }
+
+    fun selectAllApps() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val allAppPackages = _apps.value.map { BlockedApp(it.packageName) }
+            blockedAppDao.insertAll(allAppPackages)
+        }
+    }
+
+    fun unselectAllApps() {
+        viewModelScope.launch(Dispatchers.IO) {
+            blockedAppDao.deleteAll()
         }
     }
 }
@@ -115,6 +157,8 @@ class AppSelectionActivity : ComponentActivity() {
         setContent {
             TapBlokTheme {
                 val appList by viewModel.apps.collectAsState()
+                val allSelected = appList.isNotEmpty() && appList.all { it.isSelected }
+
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -122,6 +166,17 @@ class AppSelectionActivity : ComponentActivity() {
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                                }
+                            },
+                            actions = {
+                                TextButton(onClick = {
+                                    if (allSelected) {
+                                        viewModel.unselectAllApps()
+                                    } else {
+                                        viewModel.selectAllApps()
+                                    }
+                                }) {
+                                    Text(if (allSelected) "Unselect All" else "Select All")
                                 }
                             }
                         )
@@ -158,7 +213,7 @@ fun AppSelectionScreen(
                 onCheckedChange = { isSelected ->
                     onAppCheckedChange(app, isSelected)
                 },
-                isEnabled = !isServiceRunning // Pass the enabled state to the list item
+                isEnabled = !isServiceRunning
             )
         }
     }
@@ -174,7 +229,7 @@ fun AppListItem(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = isEnabled) { onCheckedChange(!app.isSelected) } // Use the enabled parameter here
+            .clickable(enabled = isEnabled) { onCheckedChange(!app.isSelected) }
             .padding(vertical = 8.dp, horizontal = 8.dp)
     ) {
         Image(
@@ -192,7 +247,8 @@ fun AppListItem(
         Checkbox(
             checked = app.isSelected,
             onCheckedChange = onCheckedChange,
-            enabled = isEnabled // And also here
+            enabled = isEnabled
         )
     }
 }
+
