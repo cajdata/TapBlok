@@ -81,9 +81,9 @@ fun BlockingScreen(
 ) {
     val context = LocalContext.current
 
-    var appName by remember { mutableStateof(packageName) }
-    var appIcon by remember { mutableStateof<Drawable?>(null) }
-    var breaksRemaining by remember { mutableStateof(0) }
+    var appName by remember { mutableStateOf(packageName) }
+    var appIcon by remember { mutableStateOf<Drawable?>(null) }
+    var breaksRemaining by remember { mutableStateOf(0) }
 
     LaunchedEffect(key1 = Unit) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -95,9 +95,6 @@ fun BlockingScreen(
             appName = pm.getApplicationLabel(appInfo).toString()
             appIcon = pm.getApplicationIcon(appInfo)
         } catch (_: PackageManager.NameNotFoundException) {
-            // --- START OF CHANGES ---
-            // The unused parameter 'e' has been replaced with '_' to resolve the warning.
-            // --- END OF CHANGES ---
             appName = packageName
         }
     }
@@ -134,12 +131,9 @@ fun BlockingScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = {
                     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    // --- START OF CHANGES ---
-                    // Use the KTX extension function for a cleaner SharedPreferences edit.
                     prefs.edit {
                         putInt("breaks_remaining", breaksRemaining - 1)
                     }
-                    // --- END OF CHANGES ---
                     onTakeBreakClick()
                 }) {
                     Text(text = "Take a Break ($breaksRemaining remaining)")
