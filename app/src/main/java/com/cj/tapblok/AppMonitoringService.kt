@@ -171,4 +171,3 @@ class AppMonitoringService : Service() {
         return currentApp
     }
 }
-
