@@ -1,11 +1,14 @@
 package com.cj.tapblok
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -26,9 +29,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.cj.tapblok.ui.theme.TapBlokTheme
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +68,14 @@ fun MainScreen() {
     var canDrawOverlays by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     var isServiceRunning by remember { mutableStateOf(isServiceRunning(context, AppMonitoringService::class.java)) }
     var blockedAppAttempts by remember { mutableStateOf(0) }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     var holdProgress by remember { mutableStateOf(0f) }
     var isHolding by remember { mutableStateOf(false) }
@@ -74,12 +88,45 @@ fun MainScreen() {
         isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+    }
+
+    val qrCodeScannerLauncher = rememberLauncherForActivityResult(
+        contract = ScanContract()
+    ) { result ->
+        if (result.contents == QrCodeActivity.QR_CODE_CONTENT) {
+            val serviceIntent = Intent(context, AppMonitoringService::class.java)
+            if (isServiceRunning) {
+                context.stopService(serviceIntent)
+                Toast.makeText(context, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
+                isServiceRunning = false
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+                Toast.makeText(context, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                isServiceRunning = true
+            }
+        } else if (result.contents != null) {
+            Toast.makeText(context, "Incorrect QR Code", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
                 val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
+                hasCameraPermission = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -176,6 +223,28 @@ fun MainScreen() {
                 }) {
                     Text("Write to NFC Tag")
                 }
+                // --- START OF CHANGES ---
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(onClick = {
+                        context.startActivity(Intent(context, QrCodeActivity::class.java))
+                    }) {
+                        Text("Show QR Code")
+                    }
+                    Button(onClick = {
+                        if (hasCameraPermission) {
+                            val options = ScanOptions().setOrientationLocked(true)
+                            qrCodeScannerLauncher.launch(options)
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }) {
+                        Text("Scan QR Code")
+                    }
+                }
+                // --- END OF CHANGES ---
 
                 if (isServiceRunning) {
                     Spacer(modifier = Modifier.height(32.dp))
