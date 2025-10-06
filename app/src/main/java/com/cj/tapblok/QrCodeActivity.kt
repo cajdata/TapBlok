@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 import com.cj.tapblok.ui.theme.TapBlokTheme
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -101,10 +103,10 @@ private fun generateQrCode(content: String): Bitmap? {
         val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, 512, 512, hints)
         val width = bitMatrix.width
         val height = bitMatrix.height
-        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        val bmp = createBitmap(width, height, Bitmap.Config.RGB_565)
         for (x in 0 until width) {
             for (y in 0 until height) {
-                bmp.setPixel(x, y, if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                bmp[x, y] = if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
             }
         }
         bmp
@@ -113,3 +115,4 @@ private fun generateQrCode(content: String): Bitmap? {
         null
     }
 }
+

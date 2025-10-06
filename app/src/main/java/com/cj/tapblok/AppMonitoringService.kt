@@ -74,10 +74,7 @@ class AppMonitoringService : Service() {
         startForeground(NOTIFICATION_ID, notification)
 
         serviceScope.launch {
-            // --- START OF CHANGES ---
-            // Create a local context variable to resolve redundant qualifier warnings.
             val localContext = this@AppMonitoringService
-            // --- END OF CHANGES ---
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
 
@@ -171,3 +168,4 @@ class AppMonitoringService : Service() {
         return currentApp
     }
 }
+
