@@ -41,18 +41,21 @@ class AppMonitoringService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Handle the break intent
         if (intent?.action == ACTION_START_BREAK) {
             startBreak()
-            return START_NOT_STICKY // Don't restart the service if it's killed during a break
+            return START_NOT_STICKY
         }
 
         Log.d("AppMonitoringService", "Service has started.")
 
-        // Reset the break counter at the beginning of each session
+        // --- START OF CHANGES ---
+        // Reset counters at the beginning of each session
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        prefs.edit().putInt("breaks_remaining", 3).apply()
-
+        prefs.edit()
+            .putInt("breaks_remaining", 3)
+            .putInt("blocked_app_attempts", 0) // Reset attempt counter
+            .apply()
+        // --- END OF CHANGES ---
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
@@ -83,12 +86,18 @@ class AppMonitoringService : Service() {
                     break
                 }
 
-                // If a break is not active, continue with the blocking logic
                 if (!isBreakActive) {
                     val foregroundApp = getForegroundApp()
                     Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
                     if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                        // --- START OF CHANGES ---
+                        // Increment the blocked app attempt counter
+                        val currentAttempts = prefs.getInt("blocked_app_attempts", 0)
+                        prefs.edit().putInt("blocked_app_attempts", currentAttempts + 1).apply()
+                        Log.d("AppMonitoringService", "Blocked app attempt detected. Count: ${currentAttempts + 1}")
+                        // --- END OF CHANGES ---
+
                         val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
@@ -109,9 +118,7 @@ class AppMonitoringService : Service() {
         Log.d("AppMonitoringService", "Break started.")
 
         breakTimer = object : CountDownTimer(300000, 1000) { // 5 minutes
-            override fun onTick(millisUntilFinished: Long) {
-                // Not needed for this implementation
-            }
+            override fun onTick(millisUntilFinished: Long) {}
 
             override fun onFinish() {
                 isBreakActive = false
@@ -123,7 +130,7 @@ class AppMonitoringService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        breakTimer?.cancel() // Make sure to cancel the timer when the service is destroyed
+        breakTimer?.cancel()
         Log.d("AppMonitoringService", "Service has been destroyed.")
     }
 
