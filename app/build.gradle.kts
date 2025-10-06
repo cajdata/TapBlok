@@ -44,6 +44,10 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // --- START OF CHANGES ---
+    // Added for the new LocalLifecycleOwner to resolve the deprecation warning.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
+    // --- END OF CHANGES ---
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -67,3 +71,4 @@ dependencies {
     ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
 }
+
