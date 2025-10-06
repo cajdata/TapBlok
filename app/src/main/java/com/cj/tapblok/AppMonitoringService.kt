@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.edit
 import com.cj.tapblok.database.AppDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -48,14 +49,11 @@ class AppMonitoringService : Service() {
 
         Log.d("AppMonitoringService", "Service has started.")
 
-        // --- START OF CHANGES ---
-        // Reset counters at the beginning of each session
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        prefs.edit()
-            .putInt("breaks_remaining", 3)
-            .putInt("blocked_app_attempts", 0) // Reset attempt counter
-            .apply()
-        // --- END OF CHANGES ---
+        prefs.edit {
+            putInt("breaks_remaining", 3)
+            putInt("blocked_app_attempts", 0)
+        }
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
@@ -76,11 +74,17 @@ class AppMonitoringService : Service() {
         startForeground(NOTIFICATION_ID, notification)
 
         serviceScope.launch {
+            // --- START OF CHANGES ---
+            // Create a local variable for the service context to use within the coroutine.
+            // This resolves the "redundant qualifier" lint warnings.
+            val context = this@AppMonitoringService
+            // --- END OF CHANGES ---
+
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
 
             while (isActive) {
-                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(this@AppMonitoringService)) {
+                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(context)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
                     stopSelf()
                     break
@@ -90,20 +94,19 @@ class AppMonitoringService : Service() {
                     val foregroundApp = getForegroundApp()
                     Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
-                        // --- START OF CHANGES ---
-                        // Increment the blocked app attempt counter
-                        val currentAttempts = prefs.getInt("blocked_app_attempts", 0)
-                        prefs.edit().putInt("blocked_app_attempts", currentAttempts + 1).apply()
-                        Log.d("AppMonitoringService", "Blocked app attempt detected. Count: ${currentAttempts + 1}")
-                        // --- END OF CHANGES ---
-
-                        val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
+                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != context.packageName) {
+                        val blockIntent = Intent(context, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
                         }
                         startActivity(blockIntent)
                         Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
+
+                        val currentPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                        val currentAttempts = currentPrefs.getInt("blocked_app_attempts", 0)
+                        currentPrefs.edit {
+                            putInt("blocked_app_attempts", currentAttempts + 1)
+                        }
                     }
                 }
                 delay(1000)
@@ -118,7 +121,9 @@ class AppMonitoringService : Service() {
         Log.d("AppMonitoringService", "Break started.")
 
         breakTimer = object : CountDownTimer(300000, 1000) { // 5 minutes
-            override fun onTick(millisUntilFinished: Long) {}
+            override fun onTick(millisUntilFinished: Long) {
+                // Not needed for this implementation
+            }
 
             override fun onFinish() {
                 isBreakActive = false
@@ -169,3 +174,4 @@ class AppMonitoringService : Service() {
         return currentApp
     }
 }
+

@@ -22,16 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+// --- START OF CHANGES ---
+// Use the new LocalLifecycleOwner from the lifecycle-runtime-compose library
+// to resolve the deprecation warning.
+import androidx.lifecycle.compose.LocalLifecycleOwner
+// --- END OF CHANGES ---
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.cj.tapblok.ui.theme.TapBlokTheme
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -65,6 +65,8 @@ fun MainScreen() {
     var isServiceRunning by remember { mutableStateOf(isServiceRunning(context, AppMonitoringService::class.java)) }
     var blockedAppAttempts by remember { mutableStateOf(0) }
 
+    var holdProgress by remember { mutableStateOf(0f) }
+    var isHolding by remember { mutableStateOf(false) }
 
     val settingsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -74,15 +76,12 @@ fun MainScreen() {
         isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
     }
 
-    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
-                if (isServiceRunning) {
-                    blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
-                }
+                val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -91,13 +90,22 @@ fun MainScreen() {
         }
     }
 
-    // This effect will periodically update the counter while the screen is active
-    LaunchedEffect(isServiceRunning) {
-        if (isServiceRunning) {
-            while (isActive) {
-                blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
-                delay(1000) // Update every second
+    LaunchedEffect(isHolding) {
+        if (isHolding) {
+            val startTime = System.currentTimeMillis()
+            val duration = 90000L // 90 seconds
+            while (isHolding && System.currentTimeMillis() - startTime < duration) {
+                holdProgress = (System.currentTimeMillis() - startTime) / duration.toFloat()
+                delay(50)
             }
+            if (isHolding) {
+                holdProgress = 1f
+                val serviceIntent = Intent(context, AppMonitoringService::class.java)
+                context.stopService(serviceIntent)
+                isServiceRunning = false
+            }
+        } else {
+            holdProgress = 0f
         }
     }
 
@@ -131,21 +139,25 @@ fun MainScreen() {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Blocked App Attempts: $blockedAppAttempts",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
                         val serviceIntent = Intent(context, AppMonitoringService::class.java)
-                        if (!isServiceRunning) {
+                        if (isServiceRunning) {
+                            context.stopService(serviceIntent)
+                            isServiceRunning = false
+                        } else {
                             context.startForegroundService(serviceIntent)
                             isServiceRunning = true
                         }
                     },
                     enabled = !isServiceRunning
                 ) {
-                    Text("Start Monitoring")
+                    Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -165,64 +177,37 @@ fun MainScreen() {
 
                 if (isServiceRunning) {
                     Spacer(modifier = Modifier.height(32.dp))
-
-                    var holdProgress by remember { mutableStateOf(0f) }
-                    var isHolding by remember { mutableStateOf(false) }
-                    val scope = rememberCoroutineScope()
-                    var job by remember { mutableStateOf<Job?>(null) }
-
                     Text(
-                        text = "Emergency Stop:",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = "Press and hold for 90 seconds to force stop",
+                        style = MaterialTheme.typography.bodySmall,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-
                     Box(
-                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxWidth(0.8f)
                             .height(50.dp)
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onPress = {
                                         isHolding = true
-                                        job = scope.launch {
-                                            val startTime = System.currentTimeMillis()
-                                            while (isActive && System.currentTimeMillis() - startTime < 90000L) {
-                                                holdProgress = (System.currentTimeMillis() - startTime) / 90000f
-                                                delay(50)
-                                            }
-                                            if (isActive) {
-                                                holdProgress = 1f
-                                                val serviceIntent = Intent(context, AppMonitoringService::class.java)
-                                                context.stopService(serviceIntent)
-                                                isServiceRunning = false
-                                                holdProgress = 0f
-                                            }
-                                        }
-                                        try {
-                                            awaitRelease()
-                                        } finally {
-                                            isHolding = false
-                                            job?.cancel()
-                                            holdProgress = 0f
-                                        }
+                                        tryAwaitRelease()
+                                        isHolding = false
                                     }
                                 )
                             }
                     ) {
                         LinearProgressIndicator(
-                            progress = { holdProgress },
+                            progress = holdProgress,
                             modifier = Modifier.fillMaxSize()
                         )
                         Text(
-                            text = if (isHolding) "Keep Holding..." else "Hold for 90s to Stop",
-                            color = if (isHolding) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                            text = "EMERGENCY STOP",
+                            modifier = Modifier.align(Alignment.Center),
+                            color = if (holdProgress > 0.5f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-
             } else {
                 Text(
                     text = "Please grant the required permissions to use TapBlok.",

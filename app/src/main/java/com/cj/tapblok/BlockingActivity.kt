@@ -6,8 +6,8 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import coil.compose.rememberAsyncImagePainter
 import com.cj.tapblok.ui.theme.TapBlokTheme
 
@@ -34,39 +35,32 @@ class BlockingActivity : ComponentActivity() {
 
         val packageName = intent.getStringExtra("BLOCKED_APP_PACKAGE_NAME") ?: "An app"
 
-        // --- START OF CHANGES ---
-        // Override the back button behavior
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // Instead of closing the blocking screen, go to the home screen.
-                // This prevents the user from returning to the blocked app.
-                val intent = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                startActivity(intent)
+        val goHome = {
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
+            startActivity(intent)
+            finish()
         }
-        onBackPressedDispatcher.addCallback(this, callback)
-        // --- END OF CHANGES ---
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                goHome()
+            }
+        })
 
         setContent {
             TapBlokTheme {
                 BlockingScreen(
                     packageName = packageName,
-                    onGoHomeClick = {
-                        val intent = Intent(Intent.ACTION_MAIN).apply {
-                            addCategory(Intent.CATEGORY_HOME)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        startActivity(intent)
-                    },
+                    onGoHomeClick = goHome,
                     onTakeBreakClick = {
                         val breakIntent = Intent(this, AppMonitoringService::class.java).apply {
                             action = AppMonitoringService.ACTION_START_BREAK
                         }
                         startService(breakIntent)
-                        finish() // Close the blocking screen
+                        finish()
                     }
                 )
             }
@@ -87,11 +81,10 @@ fun BlockingScreen(
 ) {
     val context = LocalContext.current
 
-    var appName by remember { mutableStateOf(packageName) }
-    var appIcon by remember { mutableStateOf<Drawable?>(null) }
-    var breaksRemaining by remember { mutableStateOf(0) }
+    var appName by remember { mutableStateof(packageName) }
+    var appIcon by remember { mutableStateof<Drawable?>(null) }
+    var breaksRemaining by remember { mutableStateof(0) }
 
-    // Use a LaunchedEffect that re-runs when the activity is resumed
     LaunchedEffect(key1 = Unit) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         breaksRemaining = prefs.getInt("breaks_remaining", 0)
@@ -101,7 +94,10 @@ fun BlockingScreen(
             val appInfo = pm.getApplicationInfo(packageName, 0)
             appName = pm.getApplicationLabel(appInfo).toString()
             appIcon = pm.getApplicationIcon(appInfo)
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (_: PackageManager.NameNotFoundException) {
+            // --- START OF CHANGES ---
+            // The unused parameter 'e' has been replaced with '_' to resolve the warning.
+            // --- END OF CHANGES ---
             appName = packageName
         }
     }
@@ -134,13 +130,16 @@ fun BlockingScreen(
                 Text(text = "Go Home")
             }
 
-            // Only show the "Take a Break" button if there are breaks remaining
             if (breaksRemaining > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = {
-                    // Decrement the break counter in SharedPreferences
                     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    prefs.edit().putInt("breaks_remaining", breaksRemaining - 1).apply()
+                    // --- START OF CHANGES ---
+                    // Use the KTX extension function for a cleaner SharedPreferences edit.
+                    prefs.edit {
+                        putInt("breaks_remaining", breaksRemaining - 1)
+                    }
+                    // --- END OF CHANGES ---
                     onTakeBreakClick()
                 }) {
                     Text(text = "Take a Break ($breaksRemaining remaining)")
@@ -149,3 +148,4 @@ fun BlockingScreen(
         }
     }
 }
+

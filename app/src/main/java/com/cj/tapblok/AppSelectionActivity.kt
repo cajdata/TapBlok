@@ -2,7 +2,7 @@ package com.cj.tapblok
 
 import android.app.Application
 import android.content.Intent
-import android.content.pm.PackageManager
+// Unused import 'android.content.pm.PackageManager' has been removed.
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+// --- START OF CHANGES ---
+// Use the new AutoMirrored version of ArrowBack to resolve the deprecation warning.
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+// --- END OF CHANGES ---
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -59,33 +62,20 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             }
             val allApps = pm.queryIntentActivities(intent, 0)
 
-            // --- START OF CHANGES ---
-            // A comprehensive set of essential system apps that should not be blocked.
             val excludedPackages = setOf(
-                // Phone & Messaging
                 "com.google.android.dialer",
                 "com.samsung.android.dialer",
                 "com.android.dialer",
                 "com.sonyericsson.android.socialphonebook",
-                "com.google.android.apps.messaging",
-                "com.samsung.android.messaging",
-                "com.android.mms",
-
-                // System UI & Core Services
                 "com.android.systemui",
+                "com.google.android.apps.nexuslauncher",
+                "com.sec.android.app.launcher",
                 "com.android.settings",
-
-                // Launchers
-                "com.google.android.apps.nexuslauncher", // Pixel Launcher
-                "com.sec.android.app.launcher",       // Samsung One UI Home
-                "net.oneplus.launcher",                // OnePlus Launcher
-                "com.android.launcher3",               // AOSP Launcher
-
-                // Package Installers
                 "com.google.android.packageinstaller",
-                "com.android.packageinstaller"
+                "com.android.packageinstaller",
+                "com.google.android.apps.messaging",
+                "com.samsung.android.messaging"
             )
-            // --- END OF CHANGES ---
 
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
@@ -107,7 +97,6 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
         }
     }
 
-
     fun onAppSelectionChanged(app: AppInfo, isSelected: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             if (isSelected) {
@@ -120,7 +109,7 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
 
     fun selectAllApps() {
         viewModelScope.launch(Dispatchers.IO) {
-            val allAppPackages = _apps.value.map { BlockedApp(it.packageName) }
+            val allAppPackages = apps.value.map { BlockedApp(it.packageName) }
             blockedAppDao.insertAll(allAppPackages)
         }
     }
@@ -157,26 +146,24 @@ class AppSelectionActivity : ComponentActivity() {
         setContent {
             TapBlokTheme {
                 val appList by viewModel.apps.collectAsState()
-                val allSelected = appList.isNotEmpty() && appList.all { it.isSelected }
-
                 Scaffold(
                     topBar = {
                         TopAppBar(
                             title = { Text("Select Apps to Block") },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
-                                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                                    // --- START OF CHANGES ---
+                                    // Using the new AutoMirrored icon
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                    // --- END OF CHANGES ---
                                 }
                             },
                             actions = {
-                                TextButton(onClick = {
-                                    if (allSelected) {
-                                        viewModel.unselectAllApps()
-                                    } else {
-                                        viewModel.selectAllApps()
-                                    }
-                                }) {
-                                    Text(if (allSelected) "Unselect All" else "Select All")
+                                TextButton(onClick = { viewModel.selectAllApps() }) {
+                                    Text("Select All")
+                                }
+                                TextButton(onClick = { viewModel.unselectAllApps() }) {
+                                    Text("Unselect All")
                                 }
                             }
                         )

@@ -7,16 +7,23 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
+    <!--
+        The QUERY_ALL_PACKAGES permission has been removed.
+        The app can still get a list of launchable apps without this,
+        which is better for user privacy and Google Play policy compliance.
+    -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.NFC" />
 
+    <!--
+        NFC is now marked as not required. This means users on devices
+        without an NFC chip can still install and use the app with its
+        other features (like the in-app buttons and QR codes in the future).
+    -->
     <uses-feature
         android:name="android.hardware.nfc"
-        android:required="true" />
+        android:required="false" />
 
     <application
         android:name=".App"
@@ -42,7 +49,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Add this meta-data tag to link the shortcuts file -->
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
@@ -68,12 +74,10 @@
         <activity
             android:name=".BlockingActivity"
             android:exported="false"
-            android:label="@string/title_activity_blocking"
             android:launchMode="singleInstance"
             android:taskAffinity=""
             android:theme="@style/Theme.TapBlok" />
 
-        <!-- Add the declaration for the new ShortcutHandlerActivity -->
         <activity
             android:name=".ShortcutHandlerActivity"
             android:exported="true"
