@@ -115,4 +115,3 @@ private fun generateQrCode(content: String): Bitmap? {
         null
     }
 }
-

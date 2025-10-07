@@ -139,9 +139,9 @@ fun SessionHistoryItem(session: SessionHistory) {
                 val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
                 val seconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis) % 60
                 when {
-                    hours > 0 -> String.format("%d hr, %d min", hours, minutes)
-                    minutes > 0 -> String.format("%d min, %d sec", minutes, seconds)
-                    else -> String.format("%d sec", seconds)
+                    hours > 0 -> String.format(Locale.getDefault(), "%d hr, %d min", hours, minutes)
+                    minutes > 0 -> String.format(Locale.getDefault(), "%d min, %d sec", minutes, seconds)
+                    else -> String.format(Locale.getDefault(), "%d sec", seconds)
                 }
             } ?: "In Progress"
 
