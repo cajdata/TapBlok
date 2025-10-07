@@ -14,14 +14,9 @@
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="false" />
-
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
-    </queries>
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:name=".App"
@@ -44,14 +39,11 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.TapBlok">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
@@ -62,9 +54,7 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <data android:mimeType="application/vnd.com.cj.tapblok" />
             </intent-filter>
         </activity>
@@ -91,7 +81,7 @@
             android:theme="@style/Theme.TapBlok" />
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
-            android:screenOrientation="portrait"
+            android:screenOrientation="unspecified"
             tools:replace="screenOrientation" />
 
         <service
@@ -113,5 +103,12 @@
             </intent-filter>
         </receiver>
     </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
 </manifest>

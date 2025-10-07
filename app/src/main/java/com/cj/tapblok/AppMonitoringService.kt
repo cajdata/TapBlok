@@ -74,7 +74,7 @@ class AppMonitoringService : Service() {
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
-
+        val serviceContext: Context = this
         serviceScope.launch {
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
@@ -87,7 +87,7 @@ class AppMonitoringService : Service() {
             currentSessionId = db.sessionHistoryDao().insert(session)
 
             while (isActive) {
-                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(this@AppMonitoringService)) {
+                if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(serviceContext)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
                     stopSelf()
                     break
@@ -98,7 +98,7 @@ class AppMonitoringService : Service() {
                     Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
                     if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
-                        val blockIntent = Intent(this@AppMonitoringService, BlockingActivity::class.java).apply {
+                        val blockIntent = Intent(serviceContext, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
                         }
