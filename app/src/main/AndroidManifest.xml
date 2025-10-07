@@ -15,6 +15,14 @@
         android:name="android.hardware.nfc"
         android:required="false" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -26,6 +34,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TapBlok">
         <activity
+            android:name=".HabitTrackingActivity"
+            android:exported="false"
+            android:label="@string/title_activity_habit_tracking"
+            android:theme="@style/Theme.TapBlok" />
+        <activity
             android:name=".NfcWriteActivity"
             android:exported="false" />
         <activity
@@ -35,8 +48,10 @@
             android:theme="@style/Theme.TapBlok">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
@@ -47,7 +62,9 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="application/vnd.com.cj.tapblok" />
             </intent-filter>
         </activity>
@@ -97,12 +114,4 @@
         </receiver>
     </application>
 
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
-    </queries>
-
 </manifest>
-

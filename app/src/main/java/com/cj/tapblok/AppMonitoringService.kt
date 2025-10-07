@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.cj.tapblok.database.AppDatabase
+import com.cj.tapblok.database.SessionHistory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -29,6 +30,7 @@ class AppMonitoringService : Service() {
     private var blockedApps: List<String> = emptyList()
     private var isBreakActive = false
     private var breakTimer: CountDownTimer? = null
+    private var currentSessionId: Long? = null
 
     companion object {
         const val NOTIFICATION_ID = 1
@@ -77,6 +79,13 @@ class AppMonitoringService : Service() {
             val localContext = this@AppMonitoringService
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
             Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
+
+            val session = SessionHistory(
+                startTime = System.currentTimeMillis(),
+                endTime = null,
+                blockedAppAttempts = 0
+            )
+            currentSessionId = db.sessionHistoryDao().insert(session)
 
             while (isActive) {
                 if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(localContext)) {
@@ -128,6 +137,18 @@ class AppMonitoringService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.launch {
+            currentSessionId?.let { sessionId ->
+                val session = db.sessionHistoryDao().getSessionById(sessionId)
+                session?.let {
+                    val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    val attempts = prefs.getInt("blocked_app_attempts", 0)
+                    it.endTime = System.currentTimeMillis()
+                    it.blockedAppAttempts = attempts
+                    db.sessionHistoryDao().update(it)
+                }
+            }
+        }
         serviceScope.cancel()
         breakTimer?.cancel()
         Log.d("AppMonitoringService", "Service has been destroyed.")
@@ -169,4 +190,3 @@ class AppMonitoringService : Service() {
         return currentApp
     }
 }
-

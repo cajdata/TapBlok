@@ -219,6 +219,12 @@ fun MainScreen() {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = {
+                    context.startActivity(Intent(context, HabitTrackingActivity::class.java))
+                }) {
+                    Text("View Habit History")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = {
                     context.startActivity(Intent(context, NfcWriteActivity::class.java))
                 }) {
                     Text("Write to NFC Tag")
@@ -305,4 +311,3 @@ fun MainScreen() {
         }
     }
 }
-
