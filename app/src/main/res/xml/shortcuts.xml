@@ -6,6 +6,7 @@
         android:shortcutShortLabel="@string/shortcut_start_session_short_label"
         android:shortcutLongLabel="@string/shortcut_start_session_long_label"
         android:shortcutDisabledMessage="@string/shortcut_start_session_disabled">
+        <!-- Must match ShortcutHandlerActivity.ACTION_START_MONITORING -->
         <intent
             android:action="com.cj.tapblok.START_MONITORING"
             android:targetPackage="com.cj.tapblok"
