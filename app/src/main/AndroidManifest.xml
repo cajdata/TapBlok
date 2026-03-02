@@ -52,6 +52,7 @@
             <intent-filter>
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <!-- Must match NfcWriteActivity.NFC_MIME_TYPE -->
                 <data android:mimeType="application/vnd.com.cj.tapblok" />
             </intent-filter>
         </activity>
@@ -70,6 +71,7 @@
         <activity
             android:name=".ShortcutHandlerActivity"
             android:exported="true"
+            android:label="@string/title_activity_shortcut_handler"
             android:permission="com.cj.tapblok.permission.START_MONITORING"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
@@ -84,7 +86,6 @@
 
         <service
             android:name=".AppMonitoringService"
-            android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -94,7 +95,6 @@
 
         <receiver
             android:name=".BootCompletedReceiver"
-            android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
