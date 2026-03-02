@@ -63,9 +63,10 @@ class QrCodeActivity : ComponentActivity() {
 
 @Composable
 fun QrCodeScreen(modifier: Modifier = Modifier, content: String) {
-    val qrBitmap by produceState<Bitmap?>(initialValue = null, producer = {
+    val qrResult by produceState<Result<Bitmap>?>(initialValue = null, producer = {
         value = withContext(Dispatchers.Default) {
-            generateQrCode(content)
+            val bitmap = generateQrCode(content)
+            if (bitmap != null) Result.success(bitmap) else Result.failure(Exception())
         }
     })
 
@@ -76,17 +77,22 @@ fun QrCodeScreen(modifier: Modifier = Modifier, content: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (qrBitmap != null) {
-            Image(
-                bitmap = qrBitmap!!.asImageBitmap(),
+        when {
+            qrResult == null -> CircularProgressIndicator()
+            qrResult!!.isSuccess -> Image(
+                bitmap = qrResult!!.getOrThrow().asImageBitmap(),
                 contentDescription = "QR Code",
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f),
                 contentScale = ContentScale.Fit
             )
-        } else {
-            CircularProgressIndicator()
+            else -> Text(
+                text = "Failed to generate QR code.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text(
