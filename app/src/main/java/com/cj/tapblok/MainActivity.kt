@@ -5,7 +5,6 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -98,17 +97,12 @@ fun MainScreen() {
         contract = ScanContract()
     ) { result ->
         if (result.contents == QrCodeActivity.QR_CODE_CONTENT) {
-            val serviceIntent = Intent(context, AppMonitoringService::class.java)
             if (isServiceRunning) {
-                context.stopService(serviceIntent)
+                context.stopService(Intent(context, AppMonitoringService::class.java))
                 Toast.makeText(context, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
                 isServiceRunning = false
             } else {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
-                }
+                startMonitoringService(context)
                 Toast.makeText(context, "Monitoring started.", Toast.LENGTH_SHORT).show()
                 isServiceRunning = true
             }
@@ -191,16 +185,11 @@ fun MainScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        val serviceIntent = Intent(context, AppMonitoringService::class.java)
                         if (isServiceRunning) {
-                            context.stopService(serviceIntent)
+                            context.stopService(Intent(context, AppMonitoringService::class.java))
                             isServiceRunning = false
                         } else {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                context.startForegroundService(serviceIntent)
-                            } else {
-                                context.startService(serviceIntent)
-                            }
+                            startMonitoringService(context)
                             isServiceRunning = true
                         }
                     },
