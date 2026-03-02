@@ -1,10 +1,21 @@
 package com.cj.tapblok
 
+import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.app.Service
 import android.os.Build
 import android.os.Parcelable
+
+fun hasUsageStatsPermission(context: Context): Boolean {
+    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+    val mode = appOps.checkOpNoThrow(
+        AppOpsManager.OPSTR_GET_USAGE_STATS,
+        android.os.Process.myUid(),
+        context.packageName
+    )
+    return mode == AppOpsManager.MODE_ALLOWED
+}
 
 fun isServiceRunning(@Suppress("UNUSED_PARAMETER") context: Context, serviceClass: Class<out Service>): Boolean {
     return serviceClass == AppMonitoringService::class.java && AppMonitoringService.isRunning

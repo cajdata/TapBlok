@@ -19,11 +19,16 @@ class NfcHandlerActivity : ComponentActivity() {
     private fun handleNfcIntent() {
         if (NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action) {
             val messages = intent.getParcelableArrayExtraCompat<NdefMessage>(NfcAdapter.EXTRA_NDEF_MESSAGES)
-            if (messages != null) {
+            if (!messages.isNullOrEmpty()) {
                 val ndefMessage = messages[0] as NdefMessage
+                if (ndefMessage.records.isEmpty()) {
+                    Log.w("NfcHandlerActivity", "NFC message has no records.")
+                    finish()
+                    return
+                }
                 val record = ndefMessage.records[0]
 
-                if (String(record.type) != NfcWriteActivity.NFC_MIME_TYPE) {
+                if (String(record.type, Charsets.UTF_8) != NfcWriteActivity.NFC_MIME_TYPE) {
                     Log.w("NfcHandlerActivity", "Ignoring NFC tag with unexpected MIME type.")
                     finish()
                     return

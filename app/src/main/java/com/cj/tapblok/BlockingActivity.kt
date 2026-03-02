@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,10 +69,6 @@ class BlockingActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        finish()
-    }
 }
 
 @Composable
@@ -84,7 +81,7 @@ fun BlockingScreen(
 
     var appName by remember { mutableStateOf(packageName) }
     var appIcon by remember { mutableStateOf<Drawable?>(null) }
-    var breaksRemaining by remember { mutableStateOf(0) }
+    var breaksRemaining by rememberSaveable { mutableStateOf(0) }
 
     LaunchedEffect(key1 = Unit) {
         val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)

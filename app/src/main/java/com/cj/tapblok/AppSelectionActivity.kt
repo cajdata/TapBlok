@@ -2,7 +2,6 @@ package com.cj.tapblok
 
 import android.app.Application
 import android.content.Intent
-// Unused import 'android.content.pm.PackageManager' has been removed.
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -50,6 +49,23 @@ data class AppInfo(
 )
 
 class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private val application: Application) : ViewModel() {
+
+    companion object {
+        private val EXCLUDED_PACKAGES = setOf(
+            "com.google.android.dialer",
+            "com.samsung.android.dialer",
+            "com.android.dialer",
+            "com.sonyericsson.android.socialphonebook",
+            "com.android.systemui",
+            "com.google.android.apps.nexuslauncher",
+            "com.sec.android.app.launcher",
+            "com.android.settings",
+            "com.google.android.packageinstaller",
+            "com.android.packageinstaller",
+            "com.google.android.apps.messaging",
+            "com.samsung.android.messaging"
+        )
+    }
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
     val apps: StateFlow<List<AppInfo>> = _apps
 
@@ -65,31 +81,21 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             }
             val allApps = pm.queryIntentActivities(intent, 0)
 
-            val excludedPackages = setOf(
-                "com.google.android.dialer",
-                "com.samsung.android.dialer",
-                "com.android.dialer",
-                "com.sonyericsson.android.socialphonebook",
-                "com.android.systemui",
-                "com.google.android.apps.nexuslauncher",
-                "com.sec.android.app.launcher",
-                "com.android.settings",
-                "com.google.android.packageinstaller",
-                "com.android.packageinstaller",
-                "com.google.android.apps.messaging",
-                "com.samsung.android.messaging"
-            )
-
             val baseAppList = allApps.mapNotNull { app ->
                 val packageName = app.activityInfo.packageName
-                if (packageName == application.packageName || excludedPackages.contains(packageName)) {
+                if (packageName == application.packageName || EXCLUDED_PACKAGES.contains(packageName)) {
                     return@mapNotNull null
                 }
-                AppInfo(
-                    appName = app.loadLabel(pm).toString(),
-                    packageName = packageName,
-                    icon = app.loadIcon(pm)
-                )
+                try {
+                    AppInfo(
+                        appName = app.loadLabel(pm).toString(),
+                        packageName = packageName,
+                        icon = app.loadIcon(pm)
+                    )
+                } catch (e: Exception) {
+                    android.util.Log.w("AppSelectionViewModel", "Skipping $packageName: ${e.message}")
+                    null
+                }
             }.sortedBy { it.appName.lowercase() }
 
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->

@@ -20,7 +20,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
 import com.cj.tapblok.ui.theme.TapBlokTheme
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -65,8 +64,7 @@ class QrCodeActivity : ComponentActivity() {
 fun QrCodeScreen(modifier: Modifier = Modifier, content: String) {
     val qrResult by produceState<Result<Bitmap>?>(initialValue = null, producer = {
         value = withContext(Dispatchers.Default) {
-            val bitmap = generateQrCode(content)
-            if (bitmap != null) Result.success(bitmap) else Result.failure(Exception())
+            runCatching { generateQrCode(content) ?: error("Failed to generate QR code") }
         }
     })
 
@@ -77,22 +75,28 @@ fun QrCodeScreen(modifier: Modifier = Modifier, content: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        when {
-            qrResult == null -> CircularProgressIndicator()
-            qrResult!!.isSuccess -> Image(
-                bitmap = qrResult!!.getOrThrow().asImageBitmap(),
-                contentDescription = "QR Code",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                contentScale = ContentScale.Fit
-            )
-            else -> Text(
-                text = "Failed to generate QR code.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
+        when (val result = qrResult) {
+            null -> CircularProgressIndicator()
+            else -> {
+                val bitmap = result.getOrNull()
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "QR Code",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text(
+                        text = "Failed to generate QR code.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text(
@@ -111,11 +115,10 @@ private fun generateQrCode(content: String): Bitmap? {
         val width = bitMatrix.width
         val height = bitMatrix.height
         val bmp = createBitmap(width, height, Bitmap.Config.RGB_565)
-        for (x in 0 until width) {
-            for (y in 0 until height) {
-                bmp[x, y] = if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-            }
+        val pixels = IntArray(width * height) { i ->
+            if (bitMatrix[i % width, i / width]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         }
+        bmp.setPixels(pixels, 0, width, 0, 0, width, height)
         bmp
     } catch (e: Exception) {
         Log.e("QrCodeActivity", "Failed to generate QR code", e)
