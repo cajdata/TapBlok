@@ -23,9 +23,14 @@ class NfcHandlerActivity : Activity() {
             if (messages != null) {
                 val ndefMessage = messages[0] as NdefMessage
                 val record = ndefMessage.records[0]
-                val payload = String(record.payload)
 
-                Log.d("NfcHandlerActivity", "NFC Tag Payload: $payload")
+                if (String(record.type) != "application/vnd.com.cj.tapblok") {
+                    Log.w("NfcHandlerActivity", "Ignoring NFC tag with unexpected MIME type.")
+                    finish()
+                    return
+                }
+
+                Log.d("NfcHandlerActivity", "Valid TapBlok NFC tag detected.")
 
                 val serviceIntent = Intent(this, AppMonitoringService::class.java)
 
