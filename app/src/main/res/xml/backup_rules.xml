@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Backup rules for API 23–30. API 31+ uses data_extraction_rules.xml instead. -->
 <full-backup-content>
-    <!-- Back up the blocked apps database (user configuration) -->
+    <!-- Back up only the blocked apps database (user configuration); session-state prefs are not included -->
     <include domain="database" path="app_database" />
-    <!-- Exclude session-state prefs (breaks_remaining, blocked_app_attempts) -->
-    <exclude domain="sharedpref" path="app_prefs.xml" />
 </full-backup-content>
