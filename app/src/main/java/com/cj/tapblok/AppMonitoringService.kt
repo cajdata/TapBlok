@@ -35,10 +35,12 @@ class AppMonitoringService : Service() {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
         const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
+        @Volatile var isRunning = false
     }
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         db = AppDatabase.getDatabase(this)
     }
 
@@ -133,6 +135,7 @@ class AppMonitoringService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isRunning = false
         serviceScope.cancel()
         breakTimer?.cancel()
         Log.d("AppMonitoringService", "Service has been destroyed.")
