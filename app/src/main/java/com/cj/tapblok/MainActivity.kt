@@ -204,9 +204,9 @@ fun MainScreen() {
                             isServiceRunning = true
                         }
                     },
-                    enabled = !isServiceRunning
+                    enabled = true
                 ) {
-                    Text(if (isServiceRunning) "Start Monitoring" else "Start Monitoring")
+                    Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -223,7 +223,6 @@ fun MainScreen() {
                 }) {
                     Text("Write to NFC Tag")
                 }
-                // --- START OF CHANGES ---
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -244,7 +243,6 @@ fun MainScreen() {
                         Text("Scan QR Code")
                     }
                 }
-                // --- END OF CHANGES ---
 
                 if (isServiceRunning) {
                     Spacer(modifier = Modifier.height(32.dp))
