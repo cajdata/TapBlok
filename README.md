@@ -1,5 +1,7 @@
 # TapBlok
 
+[![Download APK](https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android)](https://github.com/cajdata/TapBlok/releases/latest/download/TapBlok-v1.0.0.apk)
+
 TapBlok is a digital wellbeing and productivity tool for Android designed to help users regain control over their screen time. Our core philosophy is to create intentional friction. By requiring a physical action (scanning an NFC tag or QR code) to disable a focus session, we make it more difficult for users to impulsively bypass their own productivity goals.
 
 The app is built entirely in Kotlin and utilizes modern Android development practices, including Jetpack Compose for the UI, Room for local persistence, and Coroutines for asynchronous operations.
