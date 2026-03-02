@@ -8,13 +8,14 @@ import android.util.Log
 class BootCompletedReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        // We only care about the boot completed event
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            Log.d("BootCompletedReceiver", "Boot completed, starting monitoring service.")
-
-            // Create an intent to start our service
-            val serviceIntent = Intent(context, AppMonitoringService::class.java)
-            context.startForegroundService(serviceIntent)
+            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            if (prefs.getBoolean("monitoring_active", false)) {
+                Log.d("BootCompletedReceiver", "Boot completed, resuming monitoring service.")
+                startMonitoringService(context)
+            } else {
+                Log.d("BootCompletedReceiver", "Boot completed, monitoring was not active — skipping auto-start.")
+            }
         }
     }
 }

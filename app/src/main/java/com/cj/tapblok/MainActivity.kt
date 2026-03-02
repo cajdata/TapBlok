@@ -1,7 +1,6 @@
 package com.cj.tapblok
 
 import android.Manifest
-import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -46,16 +45,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-private fun hasUsageStatsPermission(context: Context): Boolean {
-    val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-    val mode = appOps.checkOpNoThrow(
-        AppOpsManager.OPSTR_GET_USAGE_STATS,
-        android.os.Process.myUid(),
-        context.packageName
-    )
-    return mode == AppOpsManager.MODE_ALLOWED
 }
 
 @Composable
@@ -114,6 +103,8 @@ fun MainScreen() {
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
+                hasUsagePermission = hasUsageStatsPermission(context)
+                canDrawOverlays = Settings.canDrawOverlays(context)
                 isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
                 val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
@@ -192,8 +183,7 @@ fun MainScreen() {
                             startMonitoringService(context)
                             isServiceRunning = true
                         }
-                    },
-                    enabled = true
+                    }
                 ) {
                     Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
                 }

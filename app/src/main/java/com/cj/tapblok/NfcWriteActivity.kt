@@ -45,9 +45,7 @@ class NfcWriteActivity : ComponentActivity() {
             return
         }
 
-        // For now, we'll hardcode the "work" profile. Later, this can be dynamic.
-        val profilePayload = "work"
-        ndefMessage = createNdefMessage(profilePayload)
+        ndefMessage = createNdefMessage("work")
 
         setContent {
             TapBlokTheme {
