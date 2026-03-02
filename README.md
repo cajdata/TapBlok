@@ -15,6 +15,7 @@ The app is built entirely in Kotlin and utilizes modern Android development prac
     * **NFC Tag:** Scanning a pre-written NFC tag toggles the service.
     * **QR Code:** Scanning a unique QR code toggles the service.
     * **App Shortcut:** Long-pressing the app icon reveals a "Start Session" shortcut that starts monitoring instantly without opening the app.
+    * **Boot Persistence:** If a session is active when the device restarts, the service automatically resumes on boot. If the session was manually stopped beforehand, it will not auto-start.
 * **Emergency Override:** A "90-Second Hold" button is available on the main screen during an active session. Holding it for the full duration provides a "break glass" option to stop the service if the NFC tag or QR code is lost.
 * **Blocking Screen:** When a user attempts to open a blocked app, an overlay is displayed on top of it. The back button is overridden to send the user to the home screen, preventing a common bypass loophole.
 * **Break System:** When blocked, a user can take a 5-minute break. They are allotted 3 breaks per focus session. The break counter is reset every time a new session starts.
@@ -29,6 +30,7 @@ The application is composed of several key components that work together to prov
     * `PACKAGE_USAGE_STATS`: Allows us to see which app is currently in the foreground.
     * `SYSTEM_ALERT_WINDOW`: Enables us to display the blocking screen over a restricted app.
     * `CAMERA`: Required for the QR code scanning feature.
+    * `NFC`: Required to read and write NFC tags.
 * **User Interface (Jetpack Compose):** The entire UI is built with Jetpack Compose. `MainActivity` manages the primary UI state, while `AppSelectionActivity` handles the list of blockable apps.
 * **Database (Room):** We use the Room Persistence Library to store the list of blocked applications.
     * **Entity:** `BlockedApp` which contains the `packageName` of the app to be blocked.
