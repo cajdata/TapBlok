@@ -2,6 +2,7 @@ package com.cj.tapblok
 
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -111,7 +112,7 @@ private fun generateQrCode(content: String): Bitmap? {
         }
         bmp
     } catch (e: Exception) {
-        e.printStackTrace()
+        Log.e("QrCodeActivity", "Failed to generate QR code", e)
         null
     }
 }

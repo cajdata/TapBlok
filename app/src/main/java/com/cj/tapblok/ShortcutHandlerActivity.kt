@@ -13,13 +13,16 @@ class ShortcutHandlerActivity : Activity() {
         if (intent?.action == "com.cj.tapblok.START_MONITORING") {
             val serviceIntent = Intent(this, AppMonitoringService::class.java)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
+            if (!isServiceRunning(this, AppMonitoringService::class.java)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
+                Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
             } else {
-                startService(serviceIntent)
+                Toast.makeText(this, "Monitoring is already running.", Toast.LENGTH_SHORT).show()
             }
-
-            Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
         }
 
         // Finish the activity immediately as it has no UI
