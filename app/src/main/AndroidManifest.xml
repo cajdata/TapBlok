@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Added missing NFC permission (direct cause of NFC failures on some devices) -->
+    <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -25,9 +27,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.TapBlok">
+
         <activity
             android:name=".NfcWriteActivity"
             android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -41,6 +45,7 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
         <activity
             android:name=".NfcHandlerActivity"
             android:exported="true"
@@ -51,27 +56,34 @@
                 <data android:mimeType="application/vnd.com.cj.tapblok" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".AppSelectionActivity"
             android:exported="false"
             android:label="@string/title_activity_app_selection"
             android:theme="@style/Theme.TapBlok" />
+
+        <!-- Changed singleInstance to singleTask to fix task isolation issues -->
         <activity
             android:name=".BlockingActivity"
             android:exported="false"
             android:label="@string/title_activity_blocking"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/Theme.TapBlok" />
+
+        <!-- Set exported=false to close external invocation security vulnerability -->
         <activity
             android:name=".ShortcutHandlerActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <activity
             android:name=".QrCodeActivity"
             android:exported="false"
             android:label="@string/title_activity_qr_code"
             android:theme="@style/Theme.TapBlok" />
+
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:screenOrientation="portrait"
@@ -95,6 +107,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
     </application>
 
     <queries>
@@ -105,4 +118,3 @@
     </queries>
 
 </manifest>
-

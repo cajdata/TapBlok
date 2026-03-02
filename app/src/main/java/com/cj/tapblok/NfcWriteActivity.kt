@@ -2,11 +2,13 @@ package com.cj.tapblok
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.nfc.FormatException
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
+import android.nfc.tech.NdefFormatable
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -41,7 +43,6 @@ class NfcWriteActivity : ComponentActivity() {
             return
         }
 
-        // For now, we'll hardcode the "work" profile. Later, this can be dynamic.
         val profilePayload = "work"
         ndefMessage = createNdefMessage(profilePayload)
 
@@ -67,7 +68,6 @@ class NfcWriteActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Enable foreground dispatch to give this activity priority for NFC intents
         val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
         nfcAdapter?.enableForegroundDispatch(this, pendingIntent, null, null)
@@ -75,17 +75,15 @@ class NfcWriteActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Disable foreground dispatch when the activity is not in the foreground
         nfcAdapter?.disableForegroundDispatch(this)
     }
 
-    // This method is called when an NFC tag is detected while the activity is in the foreground
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
         if (tag != null && ndefMessage != null) {
+            // finish() is now called inside writeNdefMessageToTag only on success
             writeNdefMessageToTag(ndefMessage!!, tag)
-            finish()
         }
     }
 
@@ -97,22 +95,58 @@ class NfcWriteActivity : ComponentActivity() {
 
     private fun writeNdefMessageToTag(message: NdefMessage, tag: Tag) {
         val ndef = Ndef.get(tag)
-        ndef?.use {
+
+        if (ndef != null) {
             try {
-                it.connect()
-                if (it.maxSize < message.toByteArray().size) {
+                ndef.connect()
+                if (ndef.maxSize < message.toByteArray().size) {
                     Toast.makeText(this, "Tag is too small!", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (!it.isWritable) {
+                if (!ndef.isWritable) {
                     Toast.makeText(this, "Tag is read-only!", Toast.LENGTH_SHORT).show()
                     return
                 }
-                it.writeNdefMessage(message)
+                ndef.writeNdefMessage(message)
                 Toast.makeText(this, "Tag written successfully!", Toast.LENGTH_SHORT).show()
+                finish()
             } catch (e: IOException) {
-                Log.e("NfcWriteActivity", "Error writing NFC tag", e)
-                Toast.makeText(this, "Failed to write tag.", Toast.LENGTH_SHORT).show()
+                Log.e("NfcWriteActivity", "IOException writing NFC tag", e)
+                Toast.makeText(this, "Failed to write tag. Ensure tag is held steady.", Toast.LENGTH_SHORT).show()
+            } catch (e: FormatException) {
+                Log.e("NfcWriteActivity", "FormatException writing NFC tag", e)
+                Toast.makeText(this, "Tag format error. Try a different tag.", Toast.LENGTH_SHORT).show()
+            } finally {
+                try {
+                    ndef.close()
+                } catch (e: IOException) {
+                    Log.e("NfcWriteActivity", "Error closing NDEF tag", e)
+                }
+            }
+        } else {
+            // Tag is unformatted — attempt to format and write
+            val ndefFormatable = NdefFormatable.get(tag)
+            if (ndefFormatable != null) {
+                try {
+                    ndefFormatable.connect()
+                    ndefFormatable.format(message)
+                    Toast.makeText(this, "Tag formatted and written successfully!", Toast.LENGTH_SHORT).show()
+                    finish()
+                } catch (e: IOException) {
+                    Log.e("NfcWriteActivity", "IOException formatting NFC tag", e)
+                    Toast.makeText(this, "Failed to format tag.", Toast.LENGTH_SHORT).show()
+                } catch (e: FormatException) {
+                    Log.e("NfcWriteActivity", "FormatException formatting NFC tag", e)
+                    Toast.makeText(this, "Tag format error.", Toast.LENGTH_SHORT).show()
+                } finally {
+                    try {
+                        ndefFormatable.close()
+                    } catch (e: IOException) {
+                        Log.e("NfcWriteActivity", "Error closing formatable tag", e)
+                    }
+                }
+            } else {
+                Toast.makeText(this, "Tag is not NDEF compatible.", Toast.LENGTH_SHORT).show()
             }
         }
     }

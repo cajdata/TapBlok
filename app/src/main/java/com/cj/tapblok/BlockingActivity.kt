@@ -14,33 +14,29 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.content.edit
 import coil.compose.rememberAsyncImagePainter
 import com.cj.tapblok.ui.theme.TapBlokTheme
 
 class BlockingActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val packageName = intent.getStringExtra("BLOCKED_APP_PACKAGE_NAME") ?: "An app"
+        val blockedPackage = intent.getStringExtra("BLOCKED_APP_PACKAGE_NAME") ?: "An app"
 
         val goHome = {
-            val intent = Intent(Intent.ACTION_MAIN).apply {
+            notifyServiceDismissed()
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            startActivity(intent)
+            startActivity(homeIntent)
             finish()
         }
 
@@ -53,9 +49,11 @@ class BlockingActivity : ComponentActivity() {
         setContent {
             TapBlokTheme {
                 BlockingScreen(
-                    packageName = packageName,
+                    packageName = blockedPackage,
                     onGoHomeClick = goHome,
                     onTakeBreakClick = {
+                        notifyServiceDismissed()
+                        // Service handles the break decrement — do not decrement here
                         val breakIntent = Intent(this, AppMonitoringService::class.java).apply {
                             action = AppMonitoringService.ACTION_START_BREAK
                         }
@@ -67,10 +65,14 @@ class BlockingActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        finish()
+    private fun notifyServiceDismissed() {
+        val intent = Intent(this, AppMonitoringService::class.java).apply {
+            action = AppMonitoringService.ACTION_BLOCKING_DISMISSED
+        }
+        startService(intent)
     }
+
+    // onStop() -> finish() removed: caused premature dismissal on system dialogs/notifications
 }
 
 @Composable
@@ -86,7 +88,7 @@ fun BlockingScreen(
     var breaksRemaining by remember { mutableStateOf(0) }
 
     LaunchedEffect(key1 = Unit) {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(AppMonitoringService.PREFS_NAME, Context.MODE_PRIVATE)
         breaksRemaining = prefs.getInt("breaks_remaining", 0)
 
         val pm = context.packageManager
@@ -129,17 +131,11 @@ fun BlockingScreen(
 
             if (breaksRemaining > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    prefs.edit {
-                        putInt("breaks_remaining", breaksRemaining - 1)
-                    }
-                    onTakeBreakClick()
-                }) {
+                // Decrement handled by AppMonitoringService.startBreak() only
+                Button(onClick = onTakeBreakClick) {
                     Text(text = "Take a Break ($breaksRemaining remaining)")
                 }
             }
         }
     }
 }
-
