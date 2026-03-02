@@ -26,7 +26,7 @@ class AppMonitoringService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private lateinit var db: AppDatabase
-    private var blockedApps: List<String> = emptyList()
+    @Volatile private var blockedApps: List<String> = emptyList()
     @Volatile private var isBreakActive = false
     private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
@@ -80,9 +80,14 @@ class AppMonitoringService : Service() {
         isMonitoring = true
 
         serviceScope.launch {
+            db.blockedAppDao().getAllBlockedApps().collect { list ->
+                blockedApps = list.map { it.packageName }
+                Log.d("AppMonitoringService", "Blocked apps updated from DB: $blockedApps")
+            }
+        }
+
+        serviceScope.launch {
             val localContext = this@AppMonitoringService
-            blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
-            Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
 
             while (isActive) {
                 if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(localContext)) {
