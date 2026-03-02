@@ -7,7 +7,6 @@ import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.nfc.tech.Ndef
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -87,12 +86,7 @@ class NfcWriteActivity : ComponentActivity() {
     // This method is called when an NFC tag is detected while the activity is in the foreground
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val tag: Tag? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG, Tag::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-        }
+        val tag: Tag? = intent.getParcelableExtraCompat<Tag>(NfcAdapter.EXTRA_TAG)
         if (tag != null && ndefMessage != null) {
             writeNdefMessageToTag(ndefMessage!!, tag)
             finish()
@@ -110,7 +104,8 @@ class NfcWriteActivity : ComponentActivity() {
         ndef?.use {
             try {
                 it.connect()
-                if (it.maxSize < message.toByteArray().size) {
+                val messageBytes = message.toByteArray()
+                if (it.maxSize < messageBytes.size) {
                     Toast.makeText(this, "Tag is too small!", Toast.LENGTH_SHORT).show()
                     return
                 }
