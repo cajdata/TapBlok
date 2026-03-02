@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -24,7 +23,7 @@ class NfcHandlerActivity : Activity() {
                 val ndefMessage = messages[0] as NdefMessage
                 val record = ndefMessage.records[0]
 
-                if (String(record.type) != "application/vnd.com.cj.tapblok") {
+                if (String(record.type) != NfcWriteActivity.NFC_MIME_TYPE) {
                     Log.w("NfcHandlerActivity", "Ignoring NFC tag with unexpected MIME type.")
                     finish()
                     return
@@ -40,11 +39,7 @@ class NfcHandlerActivity : Activity() {
                     Toast.makeText(this, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
                 } else {
                     // If the service is not running, start it.
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
+                    startMonitoringService(this)
                     Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
                 }
             }

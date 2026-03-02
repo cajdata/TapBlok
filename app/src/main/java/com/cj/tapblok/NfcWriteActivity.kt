@@ -28,6 +28,10 @@ import java.io.IOException
 
 class NfcWriteActivity : ComponentActivity() {
 
+    companion object {
+        const val NFC_MIME_TYPE = "application/vnd.com.cj.tapblok"
+    }
+
     private var nfcAdapter: NfcAdapter? = null
     private var ndefMessage: NdefMessage? = null
 
@@ -90,7 +94,7 @@ class NfcWriteActivity : ComponentActivity() {
     }
 
     private fun createNdefMessage(payload: String): NdefMessage {
-        val mimeType = "application/vnd.com.cj.tapblok"
+        val mimeType = NFC_MIME_TYPE
         val mimeRecord = NdefRecord.createMime(mimeType, payload.toByteArray(Charsets.UTF_8))
         return NdefMessage(arrayOf(mimeRecord))
     }
