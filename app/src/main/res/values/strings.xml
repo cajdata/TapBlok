@@ -5,5 +5,6 @@
     <string name="shortcut_start_session_short_label">Start Session</string>
     <string name="shortcut_start_session_long_label">Start a new monitoring session</string>
     <string name="title_activity_qr_code">Your QR Code</string>
+    <string name="title_activity_shortcut_handler">Start Monitoring</string>
 </resources>
 
