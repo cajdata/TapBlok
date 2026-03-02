@@ -1,10 +1,10 @@
 package com.cj.tapblok
 
-import android.app.Activity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 
-class ShortcutHandlerActivity : Activity() {
+class ShortcutHandlerActivity : ComponentActivity() {
 
     companion object {
         const val ACTION_START_MONITORING = "com.cj.tapblok.START_MONITORING"
