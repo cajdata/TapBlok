@@ -4,11 +4,10 @@ import android.app.Activity
 import android.content.Intent
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-// ADD THIS IMPORT STATEMENT
-import com.cj.tapblok.isServiceRunning
 
 class NfcHandlerActivity : Activity() {
 
@@ -36,7 +35,11 @@ class NfcHandlerActivity : Activity() {
                     Toast.makeText(this, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
                 } else {
                     // If the service is not running, start it.
-                    startForegroundService(serviceIntent)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(serviceIntent)
+                    } else {
+                        startService(serviceIntent)
+                    }
                     Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
                 }
             }
