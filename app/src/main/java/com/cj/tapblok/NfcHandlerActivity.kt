@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.nfc.NdefMessage
 import android.nfc.NfcAdapter
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -18,7 +19,12 @@ class NfcHandlerActivity : Activity() {
 
     private fun handleNfcIntent() {
         if (NfcAdapter.ACTION_NDEF_DISCOVERED == intent.action) {
-            val messages = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+            val messages = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES, NdefMessage::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+            }
             if (messages != null) {
                 val ndefMessage = messages[0] as NdefMessage
                 val record = ndefMessage.records[0]
