@@ -12,13 +12,11 @@ interface BlockedAppDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(blockedApp: BlockedApp)
 
-    // --- START OF CHANGES ---
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(blockedApps: List<BlockedApp>)
 
     @Query("DELETE FROM blocked_apps")
     suspend fun deleteAll()
-    // --- END OF CHANGES ---
 
     @Delete
     suspend fun delete(blockedApp: BlockedApp)

@@ -14,10 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-// --- START OF CHANGES ---
-// Use the new AutoMirrored version of ArrowBack to resolve the deprecation warning.
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-// --- END OF CHANGES ---
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -152,10 +149,7 @@ class AppSelectionActivity : ComponentActivity() {
                             title = { Text("Select Apps to Block") },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
-                                    // --- START OF CHANGES ---
-                                    // Using the new AutoMirrored icon
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                                    // --- END OF CHANGES ---
                                 }
                             },
                             actions = {
