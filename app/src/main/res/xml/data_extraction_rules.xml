@@ -2,15 +2,11 @@
 <!-- Data extraction rules for API 31+. Pre-API 31 uses backup_rules.xml instead. -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- Back up the blocked apps database (user configuration) -->
+        <!-- Back up only the blocked apps database (user configuration); session-state prefs are not included -->
         <include domain="database" path="app_database" />
-        <!-- Exclude session-state prefs (breaks_remaining, blocked_app_attempts) -->
-        <exclude domain="sharedpref" path="app_prefs.xml" />
     </cloud-backup>
     <device-transfer>
-        <!-- Back up the blocked apps database (user configuration) -->
+        <!-- Back up only the blocked apps database (user configuration); session-state prefs are not included -->
         <include domain="database" path="app_database" />
-        <!-- Exclude session-state prefs (breaks_remaining, blocked_app_attempts) -->
-        <exclude domain="sharedpref" path="app_prefs.xml" />
     </device-transfer>
 </data-extraction-rules>
