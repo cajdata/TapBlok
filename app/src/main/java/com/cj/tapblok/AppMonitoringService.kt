@@ -29,11 +29,14 @@ class AppMonitoringService : Service() {
     private var blockedApps: List<String> = emptyList()
     private var isBreakActive = false
     private var breakTimer: CountDownTimer? = null
+    private var isBlockingActivityVisible = false
 
     companion object {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
         const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
+        const val ACTION_BLOCKING_DISMISSED = "com.cj.tapblok.ACTION_BLOCKING_DISMISSED"
+        const val PREFS_NAME = "tapblok_prefs"
     }
 
     override fun onCreate() {
@@ -47,20 +50,23 @@ class AppMonitoringService : Service() {
             return START_NOT_STICKY
         }
 
+        if (intent?.action == ACTION_BLOCKING_DISMISSED) {
+            isBlockingActivityVisible = false
+            return START_NOT_STICKY
+        }
+
         Log.d("AppMonitoringService", "Service has started.")
 
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefs.edit {
+            putBoolean("service_running", true)
             putInt("breaks_remaining", 3)
             putInt("blocked_app_attempts", 0)
         }
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE
+            this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -75,8 +81,9 @@ class AppMonitoringService : Service() {
 
         serviceScope.launch {
             val localContext = this@AppMonitoringService
+            var refreshCounter = 0
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
-            Log.d("AppMonitoringService", "Initial loaded blocked apps from DB: $blockedApps")
+            Log.d("AppMonitoringService", "Initial blocked apps: $blockedApps")
 
             while (isActive) {
                 if (!hasUsageStatsPermission() || !Settings.canDrawOverlays(localContext)) {
@@ -85,11 +92,22 @@ class AppMonitoringService : Service() {
                     break
                 }
 
+                // Refresh blocked apps list every 5 seconds to catch runtime changes
+                if (refreshCounter++ >= 5) {
+                    blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
+                    refreshCounter = 0
+                }
+
                 if (!isBreakActive) {
                     val foregroundApp = getForegroundApp()
                     Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                    if (foregroundApp != null
+                        && foregroundApp in blockedApps
+                        && foregroundApp != packageName
+                        && !isBlockingActivityVisible
+                    ) {
+                        isBlockingActivityVisible = true
                         val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
@@ -97,11 +115,13 @@ class AppMonitoringService : Service() {
                         startActivity(blockIntent)
                         Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
 
-                        val currentPrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+                        val currentPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                         val attempts = currentPrefs.getInt("blocked_app_attempts", 0)
-                        currentPrefs.edit {
-                            putInt("blocked_app_attempts", attempts + 1)
-                        }
+                        currentPrefs.edit { putInt("blocked_app_attempts", attempts + 1) }
+
+                    } else if (foregroundApp != null && foregroundApp !in blockedApps) {
+                        // Reset flag when user navigates away from the blocked app
+                        isBlockingActivityVisible = false
                     }
                 }
                 delay(1000)
@@ -112,13 +132,21 @@ class AppMonitoringService : Service() {
     }
 
     private fun startBreak() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val breaksRemaining = prefs.getInt("breaks_remaining", 0)
+
+        if (breaksRemaining <= 0) {
+            Log.d("AppMonitoringService", "No breaks remaining.")
+            return
+        }
+
+        prefs.edit { putInt("breaks_remaining", breaksRemaining - 1) }
         isBreakActive = true
-        Log.d("AppMonitoringService", "Break started.")
+        Log.d("AppMonitoringService", "Break started. Breaks remaining: ${breaksRemaining - 1}")
 
+        breakTimer?.cancel()
         breakTimer = object : CountDownTimer(300000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-            }
-
+            override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
                 isBreakActive = false
                 Log.d("AppMonitoringService", "Break finished.")
@@ -130,12 +158,13 @@ class AppMonitoringService : Service() {
         super.onDestroy()
         serviceScope.cancel()
         breakTimer?.cancel()
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
+            putBoolean("service_running", false)
+        }
         Log.d("AppMonitoringService", "Service has been destroyed.")
     }
 
-    override fun onBind(intent: Intent): IBinder? {
-        return null
-    }
+    override fun onBind(intent: Intent): IBinder? = null
 
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
@@ -148,24 +177,19 @@ class AppMonitoringService : Service() {
     }
 
     private fun getForegroundApp(): String? {
-        var currentApp: String? = null
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
+        // Reduced window from 10s to 2s to avoid stale app detection
         val appList = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
-            time - 1000 * 10,
+            time - 2000,
             time
         )
-        if (appList != null && appList.isNotEmpty()) {
-            val sortedMap: SortedMap<Long, String> = TreeMap()
-            for (usageStats in appList) {
-                sortedMap[usageStats.lastTimeUsed] = usageStats.packageName
-            }
-            if (sortedMap.isNotEmpty()) {
-                currentApp = sortedMap[sortedMap.lastKey()]
-            }
+        if (appList.isNullOrEmpty()) return null
+        val sortedMap: SortedMap<Long, String> = TreeMap()
+        for (usageStats in appList) {
+            sortedMap[usageStats.lastTimeUsed] = usageStats.packageName
         }
-        return currentApp
+        return if (sortedMap.isNotEmpty()) sortedMap[sortedMap.lastKey()] else null
     }
 }
-
