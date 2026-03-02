@@ -13,15 +13,11 @@ class ShortcutHandlerActivity : Activity() {
         if (intent?.action == "com.cj.tapblok.START_MONITORING") {
             val serviceIntent = Intent(this, AppMonitoringService::class.java)
 
-            // --- START OF CHANGES ---
-            // Add a version check to safely call the correct service-starting method.
-            // This resolves the "Call requires API level 26" error.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(serviceIntent)
             } else {
                 startService(serviceIntent)
             }
-            // --- END OF CHANGES ---
 
             Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
         }
