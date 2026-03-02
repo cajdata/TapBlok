@@ -17,9 +17,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +46,7 @@ data class AppInfo(
     val appName: String,
     val packageName: String,
     val icon: Drawable?,
-    var isSelected: Boolean = false
+    val isSelected: Boolean = false
 )
 
 class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private val application: Application) : ViewModel() {
@@ -74,22 +80,21 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
                 "com.samsung.android.messaging"
             )
 
+            val baseAppList = allApps.mapNotNull { app ->
+                val packageName = app.activityInfo.packageName
+                if (packageName == application.packageName || excludedPackages.contains(packageName)) {
+                    return@mapNotNull null
+                }
+                AppInfo(
+                    appName = app.loadLabel(pm).toString(),
+                    packageName = packageName,
+                    icon = app.loadIcon(pm)
+                )
+            }.sortedBy { it.appName.lowercase() }
+
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
-                val appList = allApps.mapNotNull { app ->
-                    val packageName = app.activityInfo.packageName
-                    if (packageName == application.packageName || excludedPackages.contains(packageName)) {
-                        return@mapNotNull null
-                    }
-                    AppInfo(
-                        appName = app.loadLabel(pm).toString(),
-                        packageName = packageName,
-                        icon = app.loadIcon(pm),
-                        isSelected = blockedAppPackages.contains(packageName)
-                    )
-                }.sortedBy { it.appName.lowercase() }
-
-                _apps.value = appList
+                _apps.value = baseAppList.map { it.copy(isSelected = blockedAppPackages.contains(it.packageName)) }
             }
         }
     }
@@ -183,9 +188,18 @@ fun AppSelectionScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val isServiceRunning by rememberUpdatedState(
-        isServiceRunning(context, AppMonitoringService::class.java)
-    )
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isServiceRunning by remember { mutableStateOf(isServiceRunning(context, AppMonitoringService::class.java)) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LazyColumn(modifier = modifier.padding(all = 8.dp)) {
         items(apps, key = { it.packageName }) { app ->
