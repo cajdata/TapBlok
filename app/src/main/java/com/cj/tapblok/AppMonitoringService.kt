@@ -27,7 +27,8 @@ class AppMonitoringService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private lateinit var db: AppDatabase
     private var blockedApps: List<String> = emptyList()
-    private var isBreakActive = false
+    @Volatile private var isBreakActive = false
+    private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
 
     companion object {
@@ -73,6 +74,9 @@ class AppMonitoringService : Service() {
 
         startForeground(NOTIFICATION_ID, notification)
 
+        if (isMonitoring) return START_STICKY
+        isMonitoring = true
+
         serviceScope.launch {
             val localContext = this@AppMonitoringService
             blockedApps = db.blockedAppDao().getAllBlockedAppsList().map { it.packageName }
@@ -112,6 +116,7 @@ class AppMonitoringService : Service() {
     }
 
     private fun startBreak() {
+        breakTimer?.cancel()
         isBreakActive = true
         Log.d("AppMonitoringService", "Break started.")
 
