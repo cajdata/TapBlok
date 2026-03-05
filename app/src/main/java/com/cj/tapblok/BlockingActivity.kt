@@ -10,23 +10,28 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import coil.compose.rememberAsyncImagePainter
 import com.cj.tapblok.ui.theme.TapBlokTheme
@@ -47,9 +52,7 @@ class BlockingActivity : ComponentActivity() {
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                goHome()
-            }
+            override fun handleOnBackPressed() { goHome() }
         })
 
         setContent {
@@ -68,7 +71,6 @@ class BlockingActivity : ComponentActivity() {
             }
         }
     }
-
 }
 
 @Composable
@@ -102,10 +104,7 @@ fun BlockingScreen(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.errorContainer
-    ) {
+    Surface(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -113,36 +112,83 @@ fun BlockingScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = rememberAsyncImagePainter(model = appIcon),
-                contentDescription = "$appName icon",
-                modifier = Modifier.size(96.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            // App icon with lock badge
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = appIcon),
+                        contentDescription = "$appName icon",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
             Text(
-                text = "$appName is blocked by TapBlok",
+                text = "BLOCKED",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 2.sp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = appName,
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
                 textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Tap your NFC tag or scan your QR code to unlock.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
             Spacer(modifier = Modifier.height(48.dp))
-            Button(onClick = onGoHomeClick) {
-                Text(text = "Go Home")
+
+            Button(
+                onClick = onGoHomeClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Go Home")
             }
 
             if (breaksRemaining > 0) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = {
-                    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                    prefs.edit {
-                        putInt("breaks_remaining", breaksRemaining - 1)
-                    }
-                    onTakeBreakClick()
-                }) {
-                    Text(text = "Take a Break ($breaksRemaining remaining)")
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                        prefs.edit { putInt("breaks_remaining", breaksRemaining - 1) }
+                        onTakeBreakClick()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Take a Break ($breaksRemaining remaining)")
                 }
             }
         }
     }
 }
-
