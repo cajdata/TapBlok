@@ -1,43 +1,123 @@
-# TapBlok
+<p align="center">
+  <img src="docs/icon.png" width="120" style="border-radius: 24px" />
+</p>
 
-[![Download APK](https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android)](https://github.com/cajdata/TapBlok/releases/latest/download/TapBlok-v1.1.0.apk)
+<h1 align="center">TapBlok</h1>
 
-TapBlok is a digital wellbeing and productivity tool for Android designed to help users regain control over their screen time. Our core philosophy is to create intentional friction. By requiring a physical action (scanning an NFC tag or QR code) to disable a focus session, we make it more difficult for users to impulsively bypass their own productivity goals.
+<p align="center">
+  <strong>Block distracting apps — the physical way.</strong>
+</p>
 
-The app is built entirely in Kotlin and utilizes modern Android development practices, including Jetpack Compose for the UI, Room for local persistence, and Coroutines for asynchronous operations.
+<p align="center">
+  TapBlok makes you earn your screen time back. Start a focus session and your chosen apps are locked — the only way out is scanning an NFC tag or QR code you've placed somewhere inconvenient. No digital bypass. No "just this once."
+</p>
+
+<p align="center">
+  <a href="https://github.com/cajdata/TapBlok/releases/latest/download/TapBlok-v1.1.0.apk">
+    <img src="https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android&color=00C27A" />
+  </a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Android-8.0%2B-green?logo=android&color=00C27A" />
+  &nbsp;
+  <img src="https://img.shields.io/github/license/cajdata/TapBlok?color=00C27A" />
+  &nbsp;
+  <img src="https://img.shields.io/badge/free-no%20subscription-00C27A" />
+</p>
 
 ---
-## Core Features
 
-* **App Selection:** Users can select any launchable application on their device to be included in the block list.
-* **Safety Block:** A comprehensive list of critical system apps (dialer, SMS, settings, launchers, etc.) are permanently excluded from the list to prevent users from making their device unusable.
-* **Select All / Unselect All:** Buttons in the app selection screen allow users to quickly add or remove all apps from the block list.
-* **Session Control:** A focus session can be started or stopped via multiple methods:
-    * **In-App Buttons:** A "Start Monitoring" button on the main screen.
-    * **NFC Tag:** Scanning a pre-written NFC tag toggles the service.
-    * **QR Code:** Scanning a unique QR code toggles the service.
-    * **App Shortcut:** Long-pressing the app icon reveals a "Start Session" shortcut that starts monitoring instantly without opening the app.
-    * **Boot Persistence:** If a session is active when the device restarts, the service automatically resumes on boot. If the session was manually stopped beforehand, it will not auto-start.
-* **Emergency Override:** A "90-Second Hold" button is available on the main screen during an active session. Holding it for the full duration provides a "break glass" option to stop the service if the NFC tag or QR code is lost.
-* **Blocking Screen:** When a user attempts to open a blocked app, an overlay is displayed on top of it. The back button is overridden to send the user to the home screen, preventing a common bypass loophole.
-* **Break System:** When blocked, a user can take a 5-minute break. They are allotted 3 breaks per focus session. The break counter is reset every time a new session starts.
-* **Attempt Counter:** The main screen displays a counter showing how many times the user has attempted to open a blocked app during the current session, providing real-time habit feedback.
+<p align="center">
+  <img src="docs/screenshots/screenshot_01_main_inactive.png" width="28%" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/screenshot_02_main_active.png" width="28%" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/screenshot_04_blocking_screen.png" width="28%" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/screenshot_03_app_selection.png" width="28%" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/screenshot_05_nfc_write.png" width="28%" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/screenshot_06_qr_code.png" width="28%" />
+</p>
 
 ---
-## Core Architecture
 
-The application is composed of several key components that work together to provide a seamless blocking experience.
+## ✨ Features
 
-* **Permissions:** The app requires several critical permissions to function:
-    * `PACKAGE_USAGE_STATS`: Allows us to see which app is currently in the foreground.
-    * `SYSTEM_ALERT_WINDOW`: Enables us to display the blocking screen over a restricted app.
-    * `CAMERA`: Required for the QR code scanning feature.
-    * `NFC`: Required to read and write NFC tags.
-* **User Interface (Jetpack Compose):** The entire UI is built with Jetpack Compose. `MainActivity` manages the primary UI state, while `AppSelectionActivity` handles the list of blockable apps.
-* **Database (Room):** We use the Room Persistence Library to store the list of blocked applications.
-    * **Entity:** `BlockedApp` which contains the `packageName` of the app to be blocked.
-    * **DAO:** `BlockedAppDao` provides methods to insert, delete, and query the list of blocked apps.
-* **Monitoring Logic (AppMonitoringService):** This is the heart of the app. It's a sticky foreground service that runs a continuous loop in a coroutine. Every second, it checks the current foreground app against the list of blocked apps. If a match is found, it launches the `BlockingActivity`.
-* **Session Control (NFC & QR Code):**
-    * **NFC:** The `NfcWriteActivity` allows users to write a custom MIME type to a tag. The headless `NfcHandlerActivity` listens for this tag and toggles the monitoring service.
-    * **QR Code:** The `QrCodeActivity` generates and displays a unique QR code. The main activity handles scanning this code to toggle the monitoring service.
+- **🏷️ NFC Tag Support** — Write TapBlok's token to any NTAG213 tag (under $1 each). Tap to toggle a session.
+- **📷 QR Code Support** — Generate a QR code in-app and print it. Hide it somewhere that requires real effort to reach.
+- **🔒 Block Any App** — Choose any launchable app on your device. Critical system apps (dialer, settings, launcher) are permanently excluded so you can't lock yourself out.
+- **☕ Smart Breaks** — Take up to 3 five-minute breaks per session without ending it.
+- **🔁 Boot Persistence** — If your device restarts mid-session, TapBlok picks right back up.
+- **🚨 Emergency Override** — Lost your tag? A 90-second hold gives you a last resort exit — slow enough to stop impulse bypassing.
+- **📊 Attempt Counter** — See how many times you tried to open a blocked app. Accountability you can't ignore.
+- **⚡ App Shortcut** — Long-press the TapBlok icon to start a session instantly.
+- **🔓 Open Source** — Every line of code is on GitHub. No black boxes, ever.
+- **🆓 Completely Free** — No subscription, no in-app purchases, no tracking, no cloud.
+
+---
+
+## 🚀 Getting Started
+
+1. **Install** — Download the APK from the [latest release](https://github.com/cajdata/TapBlok/releases/latest) and install it.
+2. **Grant permissions** — Usage Access and Display Over Other Apps are required. TapBlok will prompt you.
+3. **Pick your apps** — Tap "Manage Blocked Apps" and select the apps you want to block.
+4. **Set up your unlock method** — Write an NFC tag in-app, or generate a QR code and print it.
+5. **Start a session** — Tap "Start Monitoring" and put the tag somewhere out of arm's reach.
+
+### NFC Tags
+
+Any NDEF-compatible NFC tag works. NTAG213 tags are the most common — a 10-pack costs a few dollars on Amazon.
+
+1. Tap **Write NFC Tag** in the app
+2. Hold your tag to the back of your phone
+3. Done — place the tag somewhere that adds friction (not next to your phone)
+
+### QR Code
+
+1. Tap **Show QR Code** in the app
+2. Screenshot or print it
+3. Put it somewhere that requires getting up — another room, your wallet, your desk drawer
+
+---
+
+## 🏗️ Architecture
+
+Built entirely in Kotlin using modern Android development practices.
+
+| Component | Purpose |
+|---|---|
+| `AppMonitoringService` | Foreground service — polls the foreground app every second, launches `BlockingActivity` on a match |
+| `BlockingActivity` | Full-screen overlay shown when a blocked app is detected |
+| `AppSelectionActivity` | Lets users pick which apps to block |
+| `NfcHandlerActivity` | Toggles the service when a TapBlok NFC tag is scanned |
+| `NfcWriteActivity` | Writes TapBlok's NDEF record to an NFC tag |
+| `QrCodeActivity` | Generates and displays the unlock QR code |
+| `BootCompletedReceiver` | Restarts the service after device reboot if a session was active |
+
+**Stack:** Jetpack Compose · Material 3 · Room · Kotlin Coroutines · ZXing · Coil
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+
+1. Fork the repo
+2. Create a feature branch
+3. Commit your changes
+4. Open a Pull Request
+
+---
+
+## 📄 License
+
+Apache 2.0 — see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Made in Arvada, CO 🏔️
+</p>
