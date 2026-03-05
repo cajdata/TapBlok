@@ -81,7 +81,7 @@ class AppMonitoringService : Service() {
         serviceScope.launch {
             db.blockedAppDao().getAllBlockedApps().collect { list ->
                 blockedApps = list.map { it.packageName }.toSet()
-                Log.d("AppMonitoringService", "Blocked apps updated from DB: $blockedApps")
+                if (BuildConfig.DEBUG) Log.d("AppMonitoringService", "Blocked apps updated from DB: $blockedApps")
             }
         }
 
@@ -97,7 +97,7 @@ class AppMonitoringService : Service() {
 
                 if (!isBreakActive) {
                     val foregroundApp = getForegroundApp()
-                    Log.d("AppMonitoringService", "Current App: $foregroundApp")
+                    if (BuildConfig.DEBUG) Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
                     if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
                         val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
@@ -105,7 +105,7 @@ class AppMonitoringService : Service() {
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
                         }
                         startActivity(blockIntent)
-                        Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
+                        if (BuildConfig.DEBUG) Log.d("AppMonitoringService", "Blocked app detected: $foregroundApp")
 
                         val attempts = prefs.getInt("blocked_app_attempts", 0)
                         prefs.edit {
