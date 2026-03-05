@@ -16,13 +16,9 @@
   <a href="https://github.com/cajdata/TapBlok/releases/latest/download/TapBlok-v1.1.0.apk">
     <img src="https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android&color=00C27A" />
   </a>
-  &nbsp;
-  <img src="https://img.shields.io/badge/Android-8.0%2B-green?logo=android&color=00C27A" />
-  &nbsp;
-  <img src="https://img.shields.io/github/license/cajdata/TapBlok?color=00C27A" />
-  &nbsp;
-  <img src="https://img.shields.io/badge/free-no%20subscription-00C27A" />
 </p>
+
+<p align="center">Android 8.0+ &nbsp;·&nbsp; Apache 2.0 &nbsp;·&nbsp; Free, no subscription</p>
 
 ---
 
@@ -119,5 +115,5 @@ Apache 2.0 — see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  Made in Arvada, CO 🏔️
+  Made in Denver, CO 🏔️
 </p>
