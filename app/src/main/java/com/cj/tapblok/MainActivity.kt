@@ -11,9 +11,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Nfc
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,7 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -58,10 +78,7 @@ fun MainScreen() {
     var blockedAppAttempts by remember { mutableStateOf(0) }
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
 
@@ -78,9 +95,7 @@ fun MainScreen() {
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasCameraPermission = isGranted
-    }
+    ) { isGranted -> hasCameraPermission = isGranted }
 
     val qrCodeScannerLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
@@ -109,29 +124,25 @@ fun MainScreen() {
                 val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
                 hasCameraPermission = ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.CAMERA
+                    context, Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     LaunchedEffect(isHolding) {
         if (isHolding) {
             val startTime = System.currentTimeMillis()
-            val duration = 90000L // 90 seconds
+            val duration = 90000L
             while (isHolding && System.currentTimeMillis() - startTime < duration) {
                 holdProgress = (System.currentTimeMillis() - startTime) / duration.toFloat()
                 delay(50)
             }
             if (isHolding) {
                 holdProgress = 1f
-                val serviceIntent = Intent(context, AppMonitoringService::class.java)
-                context.stopService(serviceIntent)
+                context.stopService(Intent(context, AppMonitoringService::class.java))
                 isServiceRunning = false
             }
         } else {
@@ -141,39 +152,73 @@ fun MainScreen() {
 
     val allPermissionsGranted = hasUsagePermission && canDrawOverlays
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "TapBlok",
-                style = MaterialTheme.typography.headlineLarge
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            if (allPermissionsGranted) {
-                Text(
-                    text = if (isServiceRunning) "Monitoring is Active" else "Monitoring is Inactive",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (isServiceRunning) Color(0xFF4CAF50) else Color.Gray
-                )
-                if (isServiceRunning) {
-                    Spacer(modifier = Modifier.height(8.dp))
+    Surface(modifier = Modifier.fillMaxSize()) {
+        if (allPermissionsGranted) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 56.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Blocked App Attempts: $blockedAppAttempts",
+                        text = "TapBlok",
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                    Text(
+                        text = "App blocking with real-world friction",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                // Status card
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    color = if (isServiceRunning) MaterialTheme.colorScheme.primaryContainer
+                                            else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = if (isServiceRunning) MaterialTheme.colorScheme.primary
+                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = if (isServiceRunning) "Monitoring Active" else "Monitoring Inactive",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = when {
+                                    isServiceRunning && blockedAppAttempts > 0 ->
+                                        "$blockedAppAttempts blocked attempt${if (blockedAppAttempts != 1) "s" else ""} this session"
+                                    isServiceRunning -> "Session in progress"
+                                    else -> "Tap below to start a session"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Primary action button
                 Button(
                     onClick = {
                         if (isServiceRunning) {
@@ -183,98 +228,145 @@ fun MainScreen() {
                             startMonitoringService(context)
                             isServiceRunning = true
                         }
-                    }
-                ) {
-                    Text(if (isServiceRunning) "Stop Monitoring" else "Start Monitoring")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        context.startActivity(Intent(context, AppSelectionActivity::class.java))
                     },
-                    enabled = !isServiceRunning
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = if (isServiceRunning) ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ) else ButtonDefaults.buttonColors()
                 ) {
-                    Text("Manage Blocked Apps")
+                    Icon(
+                        imageVector = if (isServiceRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isServiceRunning) "Stop Monitoring" else "Start Monitoring",
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {
-                    context.startActivity(Intent(context, NfcWriteActivity::class.java))
-                }) {
-                    Text("Write to NFC Tag")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(onClick = {
-                        context.startActivity(Intent(context, QrCodeActivity::class.java))
-                    }) {
-                        Text("Show QR Code")
-                    }
-                    Button(onClick = {
-                        if (hasCameraPermission) {
-                            val options = ScanOptions().setOrientationLocked(true)
-                            qrCodeScannerLauncher.launch(options)
-                        } else {
-                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                    }) {
-                        Text("Scan QR Code")
+
+                // Secondary actions card
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        ActionRow(
+                            icon = Icons.Default.Apps,
+                            label = "Manage Blocked Apps",
+                            enabled = !isServiceRunning,
+                            onClick = { context.startActivity(Intent(context, AppSelectionActivity::class.java)) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ActionRow(
+                            icon = Icons.Default.Nfc,
+                            label = "Write NFC Tag",
+                            onClick = { context.startActivity(Intent(context, NfcWriteActivity::class.java)) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ActionRow(
+                            icon = Icons.Default.QrCode2,
+                            label = "Show QR Code",
+                            onClick = { context.startActivity(Intent(context, QrCodeActivity::class.java)) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ActionRow(
+                            icon = Icons.Default.QrCodeScanner,
+                            label = "Scan QR Code",
+                            onClick = {
+                                if (hasCameraPermission) {
+                                    qrCodeScannerLauncher.launch(ScanOptions().setOrientationLocked(true))
+                                } else {
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
+                            }
+                        )
                     }
                 }
 
+                // Emergency stop
                 if (isServiceRunning) {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Text(
-                        text = "Press and hold for 90 seconds to force stop",
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .height(50.dp)
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onPress = {
-                                        isHolding = true
-                                        tryAwaitRelease()
-                                        isHolding = false
-                                    }
-                                )
-                            }
-                    ) {
-                        LinearProgressIndicator(
-                            progress = { holdProgress },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "EMERGENCY STOP",
-                            modifier = Modifier.align(Alignment.Center),
-                            color = if (holdProgress > 0.5f) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                            text = "Emergency Override",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onPress = {
+                                            isHolding = true
+                                            tryAwaitRelease()
+                                            isHolding = false
+                                        }
+                                    )
+                                }
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { holdProgress },
+                                modifier = Modifier.fillMaxSize(),
+                                color = MaterialTheme.colorScheme.error,
+                                trackColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                            Text(
+                                text = "HOLD 90s TO FORCE STOP",
+                                modifier = Modifier.align(Alignment.Center),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (holdProgress > 0.5f) MaterialTheme.colorScheme.onError
+                                        else MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
-            } else {
+            }
+        } else {
+            // Permissions screen
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(72.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = "Please grant the required permissions to use TapBlok.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Permissions Required",
+                    style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "TapBlok needs a few permissions to monitor and block apps.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(32.dp))
                 if (!hasUsagePermission) {
-                    Button(onClick = {
-                        settingsLauncher.launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                    }) {
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { settingsLauncher.launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+                    ) {
                         Text("Grant Usage Access")
                     }
                 }
                 if (!canDrawOverlays) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = {
-                        settingsLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
-                    }) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { settingsLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) }
+                    ) {
                         Text("Grant Overlay Permission")
                     }
                 }
@@ -283,3 +375,40 @@ fun MainScreen() {
     }
 }
 
+@Composable
+private fun ActionRow(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) MaterialTheme.colorScheme.primary
+                   else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        )
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (enabled) Color.Unspecified
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        )
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                alpha = if (enabled) 1f else 0.38f
+            )
+        )
+    }
+}
