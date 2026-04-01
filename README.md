@@ -18,7 +18,7 @@
   </a>
 </p>
 
-<p align="center">Android 8.0+ &nbsp;·&nbsp; Apache 2.0 &nbsp;·&nbsp; Free, no subscription</p>
+<p align="center">Android 7.0+ &nbsp;·&nbsp; Apache 2.0 &nbsp;·&nbsp; Free, no subscription</p>
 
 ---
 
