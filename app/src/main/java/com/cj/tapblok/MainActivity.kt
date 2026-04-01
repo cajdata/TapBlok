@@ -26,9 +26,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -218,34 +216,27 @@ fun MainScreen() {
                     }
                 }
 
-                // Primary action button
-                Button(
-                    onClick = {
-                        if (isServiceRunning) {
-                            context.stopService(Intent(context, AppMonitoringService::class.java))
-                            isServiceRunning = false
-                        } else {
+                // Primary action button — only shown when not monitoring
+                if (!isServiceRunning) {
+                    Button(
+                        onClick = {
                             startMonitoringService(context)
                             isServiceRunning = true
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = if (isServiceRunning) ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ) else ButtonDefaults.buttonColors()
-                ) {
-                    Icon(
-                        imageVector = if (isServiceRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isServiceRunning) "Stop Monitoring" else "Start Monitoring",
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Start Monitoring",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
                 }
 
                 // Secondary actions card
