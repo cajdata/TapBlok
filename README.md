@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cajdata/TapBlok/releases/latest/download/TapBlok-v1.1.0.apk">
+  <a href="https://github.com/cajdata/TapBlok/releases/latest">
     <img src="https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android&color=00C27A" />
   </a>
 </p>
