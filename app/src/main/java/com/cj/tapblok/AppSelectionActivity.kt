@@ -2,7 +2,6 @@ package com.cj.tapblok
 
 import android.app.Application
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -33,6 +32,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.cj.tapblok.database.BlockedApp
 import com.cj.tapblok.database.BlockedAppDao
 import com.cj.tapblok.ui.theme.TapBlokTheme
@@ -44,7 +44,6 @@ import kotlinx.coroutines.launch
 data class AppInfo(
     val appName: String,
     val packageName: String,
-    val icon: Drawable?,
     val isSelected: Boolean = false
 )
 
@@ -82,15 +81,14 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             val allApps = pm.queryIntentActivities(intent, 0)
 
             val baseAppList = allApps.mapNotNull { app ->
-                val packageName = app.activityInfo.packageName
+                val packageName = app.activityInfo?.packageName ?: return@mapNotNull null
                 if (packageName == application.packageName || EXCLUDED_PACKAGES.contains(packageName)) {
                     return@mapNotNull null
                 }
                 try {
                     AppInfo(
                         appName = app.loadLabel(pm).toString(),
-                        packageName = packageName,
-                        icon = app.loadIcon(pm)
+                        packageName = packageName
                     )
                 } catch (e: Exception) {
                     android.util.Log.w("AppSelectionViewModel", "Skipping $packageName: ${e.message}")
@@ -226,6 +224,7 @@ fun AppListItem(
     onCheckedChange: (Boolean) -> Unit,
     isEnabled: Boolean
 ) {
+    val context = LocalContext.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -234,7 +233,11 @@ fun AppListItem(
             .padding(vertical = 8.dp, horizontal = 8.dp)
     ) {
         Image(
-            painter = rememberAsyncImagePainter(model = app.icon),
+            painter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(context)
+                    .data(context.packageManager.getApplicationIcon(app.packageName))
+                    .build()
+            ),
             contentDescription = "${app.appName} icon",
             modifier = Modifier.size(48.dp)
         )
