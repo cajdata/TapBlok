@@ -65,11 +65,13 @@
 
 ### NFC Tags
 
-Any NDEF-compatible NFC tag works. NTAG213 tags are the most common — a 10-pack costs a few dollars on Amazon.
+Any NDEF-compatible NFC tag works. Personally, I use and recommend these [NTAG215 NFC sticker tags (black, adhesive)](https://amzn.to/418E7nb) — they're low-profile, stick well, and the black color blends in wherever you put them. A pack of 10 is a few dollars.
 
 1. Tap **Write NFC Tag** in the app
 2. Hold your tag to the back of your phone
 3. Done — place the tag somewhere that adds friction (not next to your phone)
+
+> As an Amazon Associate I earn from qualifying purchases.
 
 ### QR Code
 
