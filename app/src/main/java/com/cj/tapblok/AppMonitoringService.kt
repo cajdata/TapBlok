@@ -1,10 +1,13 @@
 package com.cj.tapblok
 
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.provider.Settings
@@ -18,6 +21,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.ConcurrentHashMap
 
 class AppMonitoringService : Service() {
 
@@ -26,14 +33,30 @@ class AppMonitoringService : Service() {
     private lateinit var prefs: android.content.SharedPreferences
     @Volatile private var blockedApps: Set<String> = emptySet()
     @Volatile private var isBreakActive = false
+    
+    // Package Name -> Expiry Timestamp (millis)
+    private val temporarilyUnlockedApps = ConcurrentHashMap<String, Long>()
+    private val appLabelCache = ConcurrentHashMap<String, String>()
+    private var lastNotificationText: String? = null
+    
     private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
+    private val notificationManager by lazy { getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
     companion object {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
         const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
-        @Volatile var isRunning = false
+        const val ACTION_UNLOCK_APP = "com.cj.tapblok.ACTION_UNLOCK_APP"
+        const val EXTRA_PACKAGE_NAME = "extra_package_name"
+        const val EXTRA_DURATION_MINUTES = "extra_duration_minutes"
+        
+        private val _isRunning = MutableStateFlow(false)
+        val isRunningFlow: StateFlow<Boolean> = _isRunning.asStateFlow()
+        
+        var isRunning: Boolean
+            get() = _isRunning.value
+            set(value) { _isRunning.value = value }
     }
 
     override fun onCreate() {
@@ -41,12 +64,26 @@ class AppMonitoringService : Service() {
         db = AppDatabase.getDatabase(this)
         prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         isRunning = true
+        Log.d("AppMonitoringService", "Service onCreate")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_START_BREAK) {
-            startBreak()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_START_BREAK -> {
+                startBreak()
+                return START_NOT_STICKY
+            }
+            ACTION_UNLOCK_APP -> {
+                val pkg = intent.getStringExtra(EXTRA_PACKAGE_NAME)
+                val duration = intent.getIntExtra(EXTRA_DURATION_MINUTES, 0)
+                if (pkg != null && duration > 0) {
+                    temporarilyUnlockedApps[pkg] = System.currentTimeMillis() + (duration * 60 * 1000L)
+                    Log.d("AppMonitoringService", "Unlocked $pkg for $duration minutes")
+                    // Trigger immediate update
+                    updateNotificationFromMap()
+                }
+                return START_STICKY
+            }
         }
 
         Log.d("AppMonitoringService", "Service has started.")
@@ -58,22 +95,11 @@ class AppMonitoringService : Service() {
         }
 
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
+        // pendingIntent is used inside createNotification()
 
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("TapBlok is Active")
-            .setContentText("App monitoring and blocking is running.")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
-            .build()
-
-        startForeground(NOTIFICATION_ID, notification)
+        // Always start as foreground to ensure reliability, but we'll hide it if no unlocks exist
+        startForeground(NOTIFICATION_ID, createNotification())
+        updateNotificationFromMap()
 
         if (isMonitoring) return START_STICKY
         isMonitoring = true
@@ -95,11 +121,17 @@ class AppMonitoringService : Service() {
                     break
                 }
 
+                updateNotificationFromMap()
+
                 if (!isBreakActive) {
                     val foregroundApp = getForegroundApp()
-                    if (BuildConfig.DEBUG) Log.d("AppMonitoringService", "Current App: $foregroundApp")
+                    
+                    val isTempUnlocked = foregroundApp?.let {
+                        val expiry = temporarilyUnlockedApps[it]
+                        expiry != null && expiry > System.currentTimeMillis()
+                    } ?: false
 
-                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName && !isTempUnlocked) {
                         val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
@@ -149,6 +181,91 @@ class AppMonitoringService : Service() {
         return null
     }
 
+    private fun createNotification(contentText: String? = null): android.app.Notification {
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("TapBlok is Active")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .setSilent(true)
+
+        if (contentText != null) {
+            builder.setContentText(contentText)
+        }
+
+        return builder.build()
+    }
+
+    private fun updateNotificationFromMap() {
+        val now = System.currentTimeMillis()
+        val activeUnlocks = mutableListOf<String>()
+        
+        val iterator = temporarilyUnlockedApps.entries.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (entry.value <= now) {
+                iterator.remove()
+            } else {
+                val remainingMinutes = ((entry.value - now) / 60000L) + 1
+                val appLabel = getAppLabel(entry.key)
+                activeUnlocks.add("$appLabel: ${remainingMinutes}m")
+            }
+        }
+        updateNotification(activeUnlocks)
+    }
+
+    private fun updateNotification(activeUnlocks: List<String>) {
+        val contentText = if (activeUnlocks.isEmpty()) {
+            null
+        } else {
+            "Unlocked: ${activeUnlocks.joinToString(", ")}"
+        }
+        
+        if (contentText == lastNotificationText) return
+        lastNotificationText = contentText
+        
+        if (contentText == null) {
+            // No active unlocks, remove foreground notification.
+            // Note: The service remains running in the background.
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            val notification = createNotification(contentText)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    startForeground(NOTIFICATION_ID, notification)
+                }
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        }
+    }
+
+    private fun getAppLabel(packageName: String): String {
+        appLabelCache[packageName]?.let { return it }
+        val label = try {
+            val pm = packageManager
+            val appInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getApplicationInfo(packageName, 0)
+            }
+            pm.getApplicationLabel(appInfo).toString()
+        } catch (e: Exception) {
+            packageName
+        }
+        appLabelCache[packageName] = label
+        return label
+    }
+
     private fun getForegroundApp(): String? {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val time = System.currentTimeMillis()
@@ -160,4 +277,3 @@ class AppMonitoringService : Service() {
         return appList?.maxByOrNull { it.lastTimeUsed }?.packageName
     }
 }
-

@@ -12,13 +12,20 @@
   TapBlok makes you earn your screen time back. Start a focus session and your chosen apps are locked — the only way out is scanning an NFC tag or QR code you've placed somewhere inconvenient. No digital bypass. No "just this once."
 </p>
 
-<p align="center">
-  <a href="https://github.com/cajdata/TapBlok/releases/latest">
-    <img src="https://img.shields.io/github/v/release/cajdata/TapBlok?label=Download&logo=android&color=00C27A" />
-  </a>
-</p>
 
 <p align="center">Android 7.0+ &nbsp;·&nbsp; Apache 2.0 &nbsp;·&nbsp; Free, no subscription</p>
+
+---
+
+## 🛠️ Fork Updates
+
+The exit logic has been overhauled to provide dynamic resistance based on your focus goals:
+
+- **Mode-Aware Exits**: 
+    - **Chill Mode**: (Same as original app) Any valid NFC/QR scan toggles monitoring immediately, even from the block screen.
+    - **Strict Mode**: Scanning on a block screen grants a **temporary timed unlock for the single app**. Stopping requires scanning while TapBlok is in the foreground.
+- **Improved Feedback**: A silent notification will appear to tell you how much time you have left if you are in strict mode.
+- **Unified Payloads**: Both `TAPBLOK_TOGGLE` and `TAPBLOK_UNLOCK:<duration>` are now supported.
 
 ---
 
@@ -47,18 +54,33 @@
 - **🔒 Block Any App** — Choose any launchable app on your device. Critical system apps (dialer, settings, launcher) are permanently excluded so you can't lock yourself out.
 - **☕ Smart Breaks** — Take up to 3 five-minute breaks per session without ending it.
 - **🔁 Boot Persistence** — If your device restarts mid-session, TapBlok picks right back up.
-- **🚨 Emergency Override** — Lost your tag? A 90-second hold gives you a last resort exit — slow enough to stop impulse bypassing.
+- **🚨 Emergency Override** — Lost your tag? A 90-s[README.md](README.md)econd hold gives you a last resort exit — slow enough to stop impulse bypassing.
 - **📊 Attempt Counter** — See how many times you tried to open a blocked app. Accountability you can't ignore.
 - **⚡ App Shortcut** — Long-press the TapBlok icon to start a session instantly.
-- **🔓 Open Source** — Every line of code is on GitHub. No black boxes, ever.
 - **🆓 Completely Free** — No subscription, no in-app purchases, no tracking, no cloud.
 
 ---
 
-## 🚀 Getting Started
+## 🛡️ Modes of Operation
 
-1. **Install** — Download the APK from the [latest release](https://github.com/cajdata/TapBlok/releases/latest) and install it.
-2. **Grant permissions** — Usage Access and Display Over Other Apps are required. TapBlok will prompt you.
+TapBlok now offers two modes to match your focus needs:
+
+### Chill Mode (Default)
+Any valid scan (NFC or QR) immediately toggles the monitoring state. If you're on a block screen, scanning your tag will end the session instantly. Best for those who want a simple physical switch for their focus.
+
+### Strict Mode
+Designed for maximum friction and discipline:
+- **Foreground Enforcement**: Monitoring can only be stopped by scanning your tag while the TapBlok app is open in the foreground. Background scans will trigger a "Strict Mode Active" notification.
+- **Timed Unlocks**: Scanning a tag from a block screen won't end the session; instead, it grants a temporary unlock (default 5 minutes) for that specific app.
+- **Dynamic Feedback**: The persistent notification only shows active unlock timers and hides itself when idle to reduce clutter.
+
+---
+
+## 🚀 Getting Started
+**Note on Installation**: The APKs on my fork will not be signed. You will get a scary popup saying "Unrecognised developer"! If you don't trust this, you will have to build the app from source.
+
+1. **Install** — Download the APK from the [latest release](https://github.com/cajdata/TapBlok/releases/latest) and install it (you will likely need to click something like "more details > install anyway".
+2. **Grant permissions** — Usage Access and Display Over Other Apps are required, notifications are suggested. TapBlok will prompt you. 
 3. **Pick your apps** — Tap "Manage Blocked Apps" and select the apps you want to block.
 4. **Set up your unlock method** — Write an NFC tag in-app, or generate a QR code and print it.
 5. **Start a session** — Tap "Start Monitoring" and put the tag somewhere out of arm's reach.
@@ -119,3 +141,4 @@ Apache 2.0 — see [LICENSE](LICENSE) for details.
 <p align="center">
   Made in Denver, CO 🏔️
 </p>
+

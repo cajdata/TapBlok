@@ -1,9 +1,13 @@
 package com.cj.tapblok
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.nfc.NdefMessage
+import android.nfc.NfcAdapter
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -19,21 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Nfc
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,24 +33,80 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cj.tapblok.ui.theme.TapBlokTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    private var nfcAdapter: NfcAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        nfcAdapter = NfcAdapter.getDefaultAdapter(this)
         setContent {
             TapBlokTheme {
                 MainScreen()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val intent = Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_MUTABLE)
+        nfcAdapter?.enableForegroundDispatch(this, pendingIntent, null, null)
+        
+        // Clear any "Strict Mode Active" warning notifications
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        notificationManager.cancel(1001)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        nfcAdapter?.disableForegroundDispatch(this)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val action = intent.action
+        if (action == NfcAdapter.ACTION_NDEF_DISCOVERED ||
+            action == NfcAdapter.ACTION_TECH_DISCOVERED ||
+            action == NfcAdapter.ACTION_TAG_DISCOVERED
+        ) {
+            val messages =
+                intent.getParcelableArrayExtraCompat<NdefMessage>(NfcAdapter.EXTRA_NDEF_MESSAGES)
+            if (!messages.isNullOrEmpty()) {
+                val ndefMessage = messages[0] as NdefMessage
+                if (ndefMessage.records.isNotEmpty()) {
+                    val record = ndefMessage.records[0]
+                    val payload = String(record.payload, Charsets.UTF_8)
+                    handleNfcPayload(payload)
+                }
+            }
+        }
+    }
+
+    private fun handleNfcPayload(payload: String) {
+        val isTogglePayload = payload == "TAPBLOK_TOGGLE"
+        val isUnlockPayload = payload.startsWith("TAPBLOK_UNLOCK:")
+
+        if (isTogglePayload || isUnlockPayload) {
+            if (AppMonitoringService.isRunning) {
+                stopService(Intent(this, AppMonitoringService::class.java))
+                Toast.makeText(this, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
+            } else {
+                startMonitoringService(this)
+                Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -69,14 +116,34 @@ class MainActivity : ComponentActivity() {
 fun MainScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val prefs = remember { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    val isServiceRunning by AppMonitoringService.isRunningFlow.collectAsStateWithLifecycle()
     var hasUsagePermission by remember { mutableStateOf(hasUsageStatsPermission(context)) }
     var canDrawOverlays by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
-    var isServiceRunning by remember { mutableStateOf(isServiceRunning(context, AppMonitoringService::class.java)) }
+    
     var blockedAppAttempts by remember { mutableStateOf(0) }
+    
+    var isStrictMode by remember {
+        mutableStateOf(prefs.getBoolean("is_strict_mode", false))
+    }
+    var defaultUnlockDuration by remember {
+        mutableStateOf(prefs.getInt("default_unlock_duration", 5))
+    }
+    
     var hasCameraPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
         )
     }
 
@@ -88,28 +155,35 @@ fun MainScreen() {
     ) {
         hasUsagePermission = hasUsageStatsPermission(context)
         canDrawOverlays = Settings.canDrawOverlays(context)
-        isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
     }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted -> hasCameraPermission = isGranted }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted -> hasNotificationPermission = isGranted }
+
     val qrCodeScannerLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
     ) { result ->
-        if (result.contents == QrCodeActivity.QR_CODE_CONTENT) {
-            if (isServiceRunning) {
-                context.stopService(Intent(context, AppMonitoringService::class.java))
-                Toast.makeText(context, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
-                isServiceRunning = false
+        if (result.contents != null) {
+            val content = result.contents
+            val isTogglePayload = content == QrCodeActivity.QR_CODE_CONTENT
+            val isUnlockPayload = content.startsWith("TAPBLOK_UNLOCK:")
+            
+            if (isTogglePayload || isUnlockPayload) {
+                if (isServiceRunning) {
+                    context.stopService(Intent(context, AppMonitoringService::class.java))
+                    Toast.makeText(context, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
+                } else {
+                    startMonitoringService(context)
+                    Toast.makeText(context, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                }
             } else {
-                startMonitoringService(context)
-                Toast.makeText(context, "Monitoring started.", Toast.LENGTH_SHORT).show()
-                isServiceRunning = true
+                Toast.makeText(context, "Incorrect QR Code", Toast.LENGTH_SHORT).show()
             }
-        } else if (result.contents != null) {
-            Toast.makeText(context, "Incorrect QR Code", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -118,12 +192,17 @@ fun MainScreen() {
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasUsagePermission = hasUsageStatsPermission(context)
                 canDrawOverlays = Settings.canDrawOverlays(context)
-                isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
-                val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
                 hasCameraPermission = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
+                hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                } else {
+                    true
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -141,7 +220,6 @@ fun MainScreen() {
             if (isHolding) {
                 holdProgress = 1f
                 context.stopService(Intent(context, AppMonitoringService::class.java))
-                isServiceRunning = false
             }
         } else {
             holdProgress = 0f
@@ -216,26 +294,91 @@ fun MainScreen() {
                     }
                 }
 
-                // Primary action button — only shown when not monitoring
+                // Mode Selection
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (isStrictMode) "Strict Mode" else "Chill Mode",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = if (isStrictMode) "No breaks. NFC/QR scan required." else "Standard mode with breaks.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = isStrictMode,
+                                onCheckedChange = {
+                                    if (!isServiceRunning) {
+                                        isStrictMode = it
+                                        prefs.edit { putBoolean("is_strict_mode", it) }
+                                    } else {
+                                        Toast.makeText(context, "Cannot change mode while monitoring", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                enabled = !isServiceRunning
+                            )
+                        }
+                        
+                        if (isStrictMode) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Default Unlock Duration: $defaultUnlockDuration min",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Slider(
+                                value = defaultUnlockDuration.toFloat(),
+                                onValueChange = { 
+                                    defaultUnlockDuration = it.toInt()
+                                    prefs.edit { putInt("default_unlock_duration", it.toInt()) }
+                                },
+                                valueRange = 1f..60f,
+                                steps = 59,
+                                enabled = !isServiceRunning
+                            )
+                        }
+                    }
+                }
+
+                // Primary action button — only shown when not monitoring OR in strict mode to stop via scan
                 if (!isServiceRunning) {
                     Button(
                         onClick = {
                             startMonitoringService(context)
-                            isServiceRunning = true
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null
-                        )
+                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Start Monitoring",
-                            style = MaterialTheme.typography.labelLarge
-                        )
+                        Text(text = "Start Monitoring", style = MaterialTheme.typography.labelLarge)
+                    }
+                } else {
+                    // Both modes require scanning to stop via the primary button
+                    Button(
+                        onClick = {
+                            if (hasCameraPermission) {
+                                qrCodeScannerLauncher.launch(ScanOptions().setOrientationLocked(true))
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Scan to Stop Monitoring", style = MaterialTheme.typography.labelLarge)
                     }
                 }
 
@@ -359,6 +502,15 @@ fun MainScreen() {
                         onClick = { settingsLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) }
                     ) {
                         Text("Grant Overlay Permission")
+                    }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+                    ) {
+                        Text("Grant Notification Permission")
                     }
                 }
             }
