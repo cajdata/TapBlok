@@ -79,7 +79,7 @@ Designed for maximum friction and discipline:
 ## 🚀 Getting Started
 **Note on Installation**: The APKs on my fork will not be signed. You will get a scary popup saying "Unrecognised developer"! If you don't trust this, you will have to build the app from source.
 
-1. **Install** — Download the APK from the [latest release](https://github.com/cajdata/TapBlok/releases/latest) and install it (you will likely need to click something like "more details > install anyway".
+1. **Install** — Download the APK from the [latest release](https://github.com/ImLouisxyz/TapBlok/releases/latest) and install it (you will likely need to click something like "more details > install anyway".
 2. **Grant permissions** — Usage Access and Display Over Other Apps are required, notifications are suggested. TapBlok will prompt you. 
 3. **Pick your apps** — Tap "Manage Blocked Apps" and select the apps you want to block.
 4. **Set up your unlock method** — Write an NFC tag in-app, or generate a QR code and print it.
