@@ -2,6 +2,7 @@ package com.cj.tapblok
 
 import android.app.Application
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -94,7 +95,9 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
                     android.util.Log.w("AppSelectionViewModel", "Skipping $packageName: ${e.message}")
                     null
                 }
-            }.sortedBy { it.appName.lowercase() }
+            }
+                .distinctBy { it.packageName }
+                .sortedBy { it.appName.lowercase() }
 
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
@@ -225,6 +228,17 @@ fun AppListItem(
     isEnabled: Boolean
 ) {
     val context = LocalContext.current
+    val appIcon = remember(app.packageName) {
+        try {
+            context.packageManager.getApplicationIcon(app.packageName)
+        } catch (e: PackageManager.NameNotFoundException) {
+            android.util.Log.w("AppListItem", "Unable to load icon for ${app.packageName}", e)
+            context.applicationInfo.loadIcon(context.packageManager)
+        } catch (e: RuntimeException) {
+            android.util.Log.w("AppListItem", "Unable to load icon for ${app.packageName}", e)
+            context.applicationInfo.loadIcon(context.packageManager)
+        }
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -235,7 +249,7 @@ fun AppListItem(
         Image(
             painter = rememberAsyncImagePainter(
                 model = ImageRequest.Builder(context)
-                    .data(context.packageManager.getApplicationIcon(app.packageName))
+                    .data(appIcon)
                     .build()
             ),
             contentDescription = "${app.appName} icon",
@@ -255,4 +269,3 @@ fun AppListItem(
         )
     }
 }
-
