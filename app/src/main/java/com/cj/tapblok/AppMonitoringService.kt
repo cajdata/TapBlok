@@ -101,7 +101,7 @@ class AppMonitoringService : Service() {
 
                     if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
                         val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
                         }
                         startActivity(blockIntent)
