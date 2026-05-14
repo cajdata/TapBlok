@@ -151,13 +151,21 @@ class AppMonitoringService : Service() {
 
     private fun getForegroundApp(): String? {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val time = System.currentTimeMillis()
-        val appList = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            time - 1000 * 10,
-            time
-        )
-        return appList?.maxByOrNull { it.lastTimeUsed }?.packageName
+        val endTime = System.currentTimeMillis()
+        val startTime = endTime - 1000 * 60 // 1 minute
+
+        val events = usageStatsManager.queryEvents(startTime, endTime)
+        val event = android.app.usage.UsageEvents.Event()
+        var currentForegroundApp: String? = null
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            // ACTIVITY_RESUMED is 1, check this for broader compatibility
+            if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
+                currentForegroundApp = event.packageName
+            }
+        }
+        return currentForegroundApp
     }
 }
 
