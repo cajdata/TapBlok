@@ -89,7 +89,7 @@ class AppMonitoringService : Service() {
             val localContext = this@AppMonitoringService
 
             while (isActive) {
-                if (!hasUsageStatsPermission(localContext) || !Settings.canDrawOverlays(localContext)) {
+                if (!hasUsageStatsPermission(localContext) || !Settings.canDrawOverlays(localContext) || !hasNotificationPermission(localContext)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
                     stopSelf()
                     break

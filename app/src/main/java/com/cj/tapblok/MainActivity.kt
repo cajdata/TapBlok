@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -79,6 +80,15 @@ fun MainScreen() {
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
 
     var holdProgress by remember { mutableStateOf(0f) }
     var isHolding by remember { mutableStateOf(false) }
@@ -94,6 +104,10 @@ fun MainScreen() {
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted -> hasCameraPermission = isGranted }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted -> hasNotificationPermission = isGranted }
 
     val qrCodeScannerLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
@@ -124,6 +138,11 @@ fun MainScreen() {
                 hasCameraPermission = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    hasNotificationPermission = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -148,7 +167,7 @@ fun MainScreen() {
         }
     }
 
-    val allPermissionsGranted = hasUsagePermission && canDrawOverlays
+    val allPermissionsGranted = hasUsagePermission && canDrawOverlays && hasNotificationPermission
 
     Surface(modifier = Modifier.fillMaxSize()) {
         if (allPermissionsGranted) {
@@ -359,6 +378,15 @@ fun MainScreen() {
                         onClick = { settingsLauncher.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) }
                     ) {
                         Text("Grant Overlay Permission")
+                    }
+                }
+                if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+                    ) {
+                        Text("Grant Notification Permission")
                     }
                 }
             }

@@ -44,8 +44,12 @@ class NfcHandlerActivity : ComponentActivity() {
                     Toast.makeText(this, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
                 } else {
                     // If the service is not running, start it.
-                    startMonitoringService(this)
-                    Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                    if (hasUsageStatsPermission(this) && android.provider.Settings.canDrawOverlays(this) && hasNotificationPermission(this)) {
+                        startMonitoringService(this)
+                        Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Please open TapBlok to grant missing permissions.", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
