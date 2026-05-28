@@ -28,6 +28,7 @@ class AppMonitoringService : Service() {
     @Volatile private var isBreakActive = false
     private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
+    private var lastKnownForegroundApp: String? = null
 
     companion object {
         const val NOTIFICATION_ID = 1
@@ -165,7 +166,12 @@ class AppMonitoringService : Service() {
                 currentForegroundApp = event.packageName
             }
         }
-        return currentForegroundApp
+
+        if (currentForegroundApp != null) {
+            lastKnownForegroundApp = currentForegroundApp
+        }
+
+        return lastKnownForegroundApp
     }
 }
 
