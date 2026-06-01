@@ -94,7 +94,8 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
                     android.util.Log.w("AppSelectionViewModel", "Skipping $packageName: ${e.message}")
                     null
                 }
-            }.sortedBy { it.appName.lowercase() }
+            }.distinctBy { it.packageName }
+                .sortedBy { it.appName.lowercase() }
 
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
