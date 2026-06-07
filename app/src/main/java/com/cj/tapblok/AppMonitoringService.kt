@@ -28,6 +28,7 @@ class AppMonitoringService : Service() {
     @Volatile private var isBreakActive = false
     private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
+    private var lastKnownForegroundApp: String? = null
 
     companion object {
         const val NOTIFICATION_ID = 1
@@ -89,7 +90,7 @@ class AppMonitoringService : Service() {
             val localContext = this@AppMonitoringService
 
             while (isActive) {
-                if (!hasUsageStatsPermission(localContext) || !Settings.canDrawOverlays(localContext)) {
+                if (!hasUsageStatsPermission(localContext) || !Settings.canDrawOverlays(localContext) || !hasNotificationPermission(localContext)) {
                     Log.e("AppMonitoringService", "Permissions revoked. Stopping service.")
                     stopSelf()
                     break
@@ -165,7 +166,12 @@ class AppMonitoringService : Service() {
                 currentForegroundApp = event.packageName
             }
         }
-        return currentForegroundApp
+
+        if (currentForegroundApp != null) {
+            lastKnownForegroundApp = currentForegroundApp
+        }
+
+        return lastKnownForegroundApp
     }
 }
 

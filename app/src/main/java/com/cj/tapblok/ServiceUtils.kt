@@ -1,11 +1,14 @@
 package com.cj.tapblok
 
 import android.app.AppOpsManager
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.app.Service
 import android.os.Build
 import android.os.Parcelable
+import androidx.core.content.ContextCompat
 
 fun hasUsageStatsPermission(context: Context): Boolean {
     val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
@@ -19,6 +22,14 @@ fun hasUsageStatsPermission(context: Context): Boolean {
 
 fun isServiceRunning(@Suppress("UNUSED_PARAMETER") context: Context, serviceClass: Class<out Service>): Boolean {
     return serviceClass == AppMonitoringService::class.java && AppMonitoringService.isRunning
+}
+
+fun hasNotificationPermission(context: Context): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
+    }
 }
 
 fun startMonitoringService(context: Context) {
