@@ -15,8 +15,12 @@ class ShortcutHandlerActivity : ComponentActivity() {
 
         if (intent?.action == ACTION_START_MONITORING) {
             if (!isServiceRunning(this, AppMonitoringService::class.java)) {
-                startMonitoringService(this)
-                Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                if (hasUsageStatsPermission(this) && android.provider.Settings.canDrawOverlays(this) && hasNotificationPermission(this)) {
+                    startMonitoringService(this)
+                    Toast.makeText(this, "Monitoring started.", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Please open TapBlok to grant missing permissions.", Toast.LENGTH_LONG).show()
+                }
             } else {
                 Toast.makeText(this, "Monitoring is already running.", Toast.LENGTH_SHORT).show()
             }
