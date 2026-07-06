@@ -13,8 +13,13 @@ class BootCompletedReceiver : BroadcastReceiver() {
             if (prefs.getBoolean("monitoring_active", false)) {
                 Log.d("BootCompletedReceiver", "Boot completed, resuming monitoring service.")
                 startMonitoringService(context)
+                // Alarms don't survive reboot; recompute them
+                ScheduleManager.reschedule(context)
             } else {
                 Log.d("BootCompletedReceiver", "Boot completed, monitoring was not active — skipping auto-start.")
+                // Recompute alarms, and start blocking if we're inside a scheduled window
+                // whose start alarm was missed while the phone was off
+                ScheduleManager.reschedule(context, startIfInWindow = true)
             }
         }
     }

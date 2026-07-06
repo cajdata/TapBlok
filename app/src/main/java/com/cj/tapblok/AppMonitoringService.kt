@@ -60,7 +60,7 @@ class AppMonitoringService : Service() {
         Log.d("AppMonitoringService", "Service has started.")
 
         prefs.edit {
-            putInt("breaks_remaining", 3)
+            putInt("breaks_remaining", prefs.getInt(AppSettings.KEY_BREAKS_ALLOWED, AppSettings.DEFAULT_BREAKS_ALLOWED))
             putInt("blocked_app_attempts", 0)
             putBoolean("monitoring_active", true)
         }

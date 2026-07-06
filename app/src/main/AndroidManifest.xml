@@ -15,6 +15,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Exact alarms for scheduled blocking: SCHEDULE_EXACT_ALARM covers Android 12/12L,
+         USE_EXACT_ALARM (auto-granted) covers 13+ -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <uses-permission android:name="android.permission.NFC" />
 
@@ -83,6 +89,11 @@
             android:label="@string/title_activity_qr_code"
             android:theme="@style/Theme.TapBlok" />
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.TapBlok" />
+        <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />
@@ -101,6 +112,18 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Exported so automation apps (Tasker, MacroDroid, Samsung Routines) can start
+             or stop sessions; external triggers are ignored unless the user enables
+             "Allow automation apps" in Settings. Also the target of schedule alarms. -->
+        <receiver
+            android:name=".ScheduleReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.cj.tapblok.SCHEDULE_START" />
+                <action android:name="com.cj.tapblok.SCHEDULE_STOP" />
             </intent-filter>
         </receiver>
     </application>
