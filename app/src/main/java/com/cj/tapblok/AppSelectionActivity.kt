@@ -65,7 +65,21 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
             "com.google.android.packageinstaller",
             "com.android.packageinstaller",
             "com.google.android.apps.messaging",
-            "com.samsung.android.messaging"
+            "com.samsung.android.messaging",
+            // Camera apps across major OEMs — the website promises the camera
+            // can never be blocked
+            "com.android.camera",
+            "com.android.camera2",
+            "com.google.android.GoogleCamera",
+            "com.sec.android.app.camera",
+            "com.oneplus.camera",
+            "com.oplus.camera",
+            "com.xiaomi.camera",
+            "com.huawei.camera",
+            "com.motorola.camera3",
+            "org.codeaurora.snapcam",
+            "com.sonymobile.photopro",
+            "com.asus.camera"
         )
     }
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
