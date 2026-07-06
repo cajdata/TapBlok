@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -95,6 +96,22 @@ fun MainScreen() {
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted -> hasCameraPermission = isGranted }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
+
+    // Without POST_NOTIFICATIONS on Android 13+ the persistent "TapBlok is Active"
+    // notification never shows, leaving users with no visible running indicator
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     val qrCodeScannerLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
     ) { result ->
@@ -120,6 +137,14 @@ fun MainScreen() {
                 canDrawOverlays = Settings.canDrawOverlays(context)
                 isServiceRunning = isServiceRunning(context, AppMonitoringService::class.java)
                 val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                // If the OS killed the service mid-session (task swiped away, OEM task
+                // killer), monitoring_active is still true — resume the session silently
+                if (!isServiceRunning && prefs.getBoolean("monitoring_active", false) &&
+                    hasUsagePermission && canDrawOverlays
+                ) {
+                    startMonitoringService(context)
+                    isServiceRunning = true
+                }
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
                 hasCameraPermission = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.CAMERA
