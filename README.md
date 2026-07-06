@@ -45,9 +45,11 @@
 - **🏷️ NFC Tag Support** — Write TapBlok's token to any NTAG213 tag (under $1 each). Tap to toggle a session.
 - **📷 QR Code Support** — Generate a QR code in-app and print it. Hide it somewhere that requires real effort to reach.
 - **🔒 Block Any App** — Choose any launchable app on your device. Critical system apps (dialer, settings, launcher) are permanently excluded so you can't lock yourself out.
-- **☕ Smart Breaks** — Take up to 3 five-minute breaks per session without ending it.
+- **☕ Smart Breaks** — Take five-minute breaks without ending the session. Choose how many per session (0–5) in Settings.
 - **🔁 Boot Persistence** — If your device restarts mid-session, TapBlok picks right back up.
-- **🚨 Emergency Override** — Lost your tag? A 90-second hold gives you a last resort exit — slow enough to stop impulse bypassing.
+- **🚨 Emergency Override** — Lost your tag? A hold-to-stop last resort. Set the hold anywhere from 30 seconds to 15 minutes, or disable it entirely for strict sessions.
+- **⏰ Scheduled Blocking** — Sessions start (and optionally stop) automatically on the days and times you choose.
+- **🤖 Automation Ready** — Opt-in broadcast actions let Tasker, MacroDroid, or Samsung Routines start and stop sessions.
 - **📊 Attempt Counter** — See how many times you tried to open a blocked app. Accountability you can't ignore.
 - **⚡ App Shortcut** — Long-press the TapBlok icon to start a session instantly.
 - **🔓 Open Source** — Every line of code is on GitHub. No black boxes, ever.
@@ -78,6 +80,24 @@ Any NDEF-compatible NFC tag works. Personally, I use and recommend these [NTAG21
 1. Tap **Show QR Code** in the app
 2. Screenshot or print it
 3. Put it somewhere that requires getting up — another room, your wallet, your desk drawer
+
+### Scheduled Blocking
+
+Open **Settings → Scheduled Blocking** to start sessions automatically — pick a start time, an optional auto-stop time, and the days of the week. Overnight windows (e.g. 22:00–07:00) work, and schedules survive reboots.
+
+### Automation (Tasker, MacroDroid, Samsung Routines)
+
+Enable **Settings → Allow automation apps**, then have your automation app send a broadcast:
+
+```
+# Start a session
+am broadcast -n com.cj.tapblok/.ScheduleReceiver -a com.cj.tapblok.SCHEDULE_START
+
+# Stop a session
+am broadcast -n com.cj.tapblok/.ScheduleReceiver -a com.cj.tapblok.SCHEDULE_STOP
+```
+
+In Tasker: **System → Send Intent** with Action `com.cj.tapblok.SCHEDULE_START` (or `SCHEDULE_STOP`), Package `com.cj.tapblok`, Class `com.cj.tapblok.ScheduleReceiver`, Target `Broadcast Receiver`. This opens up location-based blocking, calendar-triggered sessions, and similar automations. External triggers are ignored unless the toggle is on.
 
 ---
 
