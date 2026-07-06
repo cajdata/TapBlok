@@ -1,10 +1,12 @@
 package com.cj.tapblok
 
+import android.app.Activity
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.os.Bundle
 import com.cj.tapblok.database.AppDatabase
 
 class App : Application() {
@@ -13,6 +15,33 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        trackForegroundForStrictMode()
+    }
+
+    // Strict mode allows stopping a session only while the user is inside TapBlok.
+    // Any of our screens counts, except the invisible handlers and the block screen
+    // (which has its own tracking so tag scans there unlock a single app instead)
+    private fun trackForegroundForStrictMode() {
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            private fun isMainUi(activity: Activity): Boolean = when (activity) {
+                is BlockingActivity, is NfcHandlerActivity, is ShortcutHandlerActivity -> false
+                else -> true
+            }
+
+            override fun onActivityResumed(activity: Activity) {
+                if (isMainUi(activity)) AppForeground.onMainResumed()
+            }
+
+            override fun onActivityPaused(activity: Activity) {
+                if (isMainUi(activity)) AppForeground.onMainPaused()
+            }
+
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
     }
 
     private fun createNotificationChannel() {

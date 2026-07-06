@@ -33,11 +33,15 @@ class AppMonitoringService : Service() {
     private var breakTimer: CountDownTimer? = null
     private var lastEventTimestamp = 0L
     private var currentForegroundApp: String? = null
+    // Strict mode: apps granted a timed unlock, package -> expiry epoch millis
+    private val temporarilyUnlockedApps = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
     companion object {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
         const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
+        const val ACTION_UNLOCK_APP = "com.cj.tapblok.ACTION_UNLOCK_APP"
+        const val EXTRA_UNLOCK_PACKAGE = "com.cj.tapblok.extra.UNLOCK_PACKAGE"
         private const val INITIAL_EVENT_LOOKBACK_MS = 60 * 60 * 1000L
         @Volatile var isRunning = false
     }
@@ -54,6 +58,15 @@ class AppMonitoringService : Service() {
             startBreak()
             // The last onStartCommand return value governs restart-after-kill behaviour,
             // so a break must not downgrade the service to non-sticky
+            return START_STICKY
+        }
+
+        if (intent?.action == ACTION_UNLOCK_APP) {
+            intent.getStringExtra(EXTRA_UNLOCK_PACKAGE)?.let { unlockPackage ->
+                val minutes = prefs.getInt(AppSettings.KEY_UNLOCK_MINUTES, AppSettings.DEFAULT_UNLOCK_MINUTES)
+                temporarilyUnlockedApps[unlockPackage] = System.currentTimeMillis() + minutes * 60_000L
+                Log.d("AppMonitoringService", "Temporarily unlocked $unlockPackage for $minutes minutes.")
+            }
             return START_STICKY
         }
 
@@ -107,7 +120,9 @@ class AppMonitoringService : Service() {
                     val foregroundApp = getForegroundApp()
                     if (BuildConfig.DEBUG) Log.d("AppMonitoringService", "Current App: $foregroundApp")
 
-                    if (foregroundApp != null && foregroundApp in blockedApps && foregroundApp != packageName) {
+                    if (foregroundApp != null && foregroundApp in blockedApps &&
+                        foregroundApp != packageName && !isTemporarilyUnlocked(foregroundApp)
+                    ) {
                         val blockIntent = Intent(localContext, BlockingActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             putExtra("BLOCKED_APP_PACKAGE_NAME", foregroundApp)
@@ -126,6 +141,15 @@ class AppMonitoringService : Service() {
         }
 
         return START_STICKY
+    }
+
+    private fun isTemporarilyUnlocked(packageName: String): Boolean {
+        val expiry = temporarilyUnlockedApps[packageName] ?: return false
+        if (expiry <= System.currentTimeMillis()) {
+            temporarilyUnlockedApps.remove(packageName)
+            return false
+        }
+        return true
     }
 
     private fun startBreak() {

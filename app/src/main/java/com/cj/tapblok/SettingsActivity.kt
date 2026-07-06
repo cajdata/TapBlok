@@ -27,6 +27,9 @@ object AppSettings {
     const val KEY_OVERRIDE_ENABLED = "override_enabled"
     const val KEY_OVERRIDE_SECONDS = "override_seconds"
     const val KEY_BREAKS_ALLOWED = "breaks_allowed"
+    const val KEY_STRICT_MODE = "strict_mode_enabled"
+    const val KEY_UNLOCK_MINUTES = "strict_unlock_minutes"
+    const val KEY_QR_TOKEN = "qr_token"
     const val KEY_EXTERNAL_AUTOMATION = "external_automation_enabled"
     const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
     const val KEY_SCHEDULE_START_MINUTES = "schedule_start_minutes"
@@ -37,6 +40,7 @@ object AppSettings {
 
     const val DEFAULT_OVERRIDE_SECONDS = 90
     const val DEFAULT_BREAKS_ALLOWED = 3
+    const val DEFAULT_UNLOCK_MINUTES = 5
     const val DEFAULT_START_MINUTES = 22 * 60
     const val DEFAULT_STOP_MINUTES = 7 * 60
     const val DEFAULT_DAYS_MASK = 0b1111111
@@ -81,6 +85,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
     var isServiceActive by remember { mutableStateOf(isServiceRunning(context, AppMonitoringService::class.java)) }
 
+    var strictMode by remember { mutableStateOf(prefs.getBoolean(AppSettings.KEY_STRICT_MODE, false)) }
+    var unlockMinutes by remember { mutableStateOf(prefs.getInt(AppSettings.KEY_UNLOCK_MINUTES, AppSettings.DEFAULT_UNLOCK_MINUTES)) }
     var overrideEnabled by remember { mutableStateOf(prefs.getBoolean(AppSettings.KEY_OVERRIDE_ENABLED, true)) }
     var overrideSeconds by remember { mutableStateOf(prefs.getInt(AppSettings.KEY_OVERRIDE_SECONDS, AppSettings.DEFAULT_OVERRIDE_SECONDS)) }
     var breaksAllowed by remember { mutableStateOf(prefs.getInt(AppSettings.KEY_BREAKS_ALLOWED, AppSettings.DEFAULT_BREAKS_ALLOWED)) }
@@ -111,6 +117,45 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+
+        SettingsSection(title = "Strict Mode") {
+            SettingsSwitchRow(
+                label = "Strict mode",
+                caption = "A session can only be stopped by scanning with TapBlok open. " +
+                        "Scanning on a block screen unlocks just that app, temporarily.",
+                checked = strictMode,
+                enabled = editable,
+                onCheckedChange = {
+                    strictMode = it
+                    prefs.edit { putBoolean(AppSettings.KEY_STRICT_MODE, it) }
+                }
+            )
+            if (strictMode) {
+                Text(
+                    text = "Temporary unlock duration",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(1 to "1m", 5 to "5m", 10 to "10m", 30 to "30m").forEach { (minutes, label) ->
+                        FilterChip(
+                            selected = unlockMinutes == minutes,
+                            enabled = editable,
+                            onClick = {
+                                unlockMinutes = minutes
+                                prefs.edit { putInt(AppSettings.KEY_UNLOCK_MINUTES, minutes) }
+                            },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+                Text(
+                    text = "For maximum friction, combine with zero breaks and a disabled emergency override.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
