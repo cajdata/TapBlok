@@ -4,7 +4,74 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TapBlok | Android App Blocker with NFC &amp; QR | Free &amp; Open Source</title>
-  <meta name="description" content="Free Android app blocker with NFC and QR unlock. The open-source alternative to Brick and Opal — no subscription, no iOS required. Block distracting apps with real-world friction." />
+  <meta name="description" content="Free, open-source Android app blocker with NFC &amp; QR unlock. The no-subscription alternative to Brick and Opal. Strict mode, scheduled blocking, real-world friction." />
+  <link rel="canonical" href="https://tapblok.com/" />
+  <link rel="icon" type="image/png" href="/icon.png" />
+  <link rel="apple-touch-icon" href="/icon.png" />
+  <meta name="theme-color" content="#faf9f5" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="TapBlok" />
+  <meta property="og:title" content="TapBlok — Free Android App Blocker with NFC &amp; QR Unlock" />
+  <meta property="og:description" content="Block distracting apps with real-world friction. Free, open source, no subscription. The Android-first alternative to Brick and Opal." />
+  <meta property="og:url" content="https://tapblok.com/" />
+  <meta property="og:image" content="https://tapblok.com/feature_graphic.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="TapBlok — Free Android App Blocker with NFC &amp; QR Unlock" />
+  <meta name="twitter:description" content="Block distracting apps with real-world friction. Free, open source, no subscription." />
+  <meta name="twitter:image" content="https://tapblok.com/feature_graphic.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TapBlok",
+    "operatingSystem": "Android 7.0 or later",
+    "applicationCategory": "UtilitiesApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://tapblok.com/",
+    "downloadUrl": "https://github.com/cajdata/TapBlok/releases/latest",
+    "image": "https://tapblok.com/icon.png",
+    "description": "Free, open-source Android app blocker unlocked by a physical NFC tag or QR code. Strict mode, scheduled blocking, and configurable breaks add real-world friction to phone habits.",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is TapBlok really free?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. No in-app purchases, no subscriptions, no hidden costs. The source code is on GitHub under the Apache 2.0 license." }
+      },
+      {
+        "@type": "Question",
+        "name": "What NFC tags work with TapBlok?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Any NDEF-compatible NFC tag works, including common NTAG213, NTAG215, and NTAG216 stickers. A pack of ten costs a few dollars." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I bypass TapBlok without the tag?",
+        "acceptedAnswer": { "@type": "Answer", "text": "By default there is a 90-second emergency hold for lost tags. Settings can stretch the hold to 15 minutes or disable it, and Strict Mode requires scanning with TapBlok open to stop a session." }
+      },
+      {
+        "@type": "Question",
+        "name": "Can blocking start automatically?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Scheduled Blocking starts and stops sessions at set times on chosen days, including overnight windows. Tasker, MacroDroid, and Samsung Routines can also trigger sessions via an opt-in broadcast." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does TapBlok block system apps?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. A built-in safety list permanently excludes the dialer, SMS app, settings, system UI, and launcher so the phone always stays usable." }
+      },
+      {
+        "@type": "Question",
+        "name": "What Android version is required?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Android 7.0 (API 24) or higher. TapBlok uses the standard Usage Stats and Foreground Service APIs." }
+      }
+    ]
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -620,14 +687,14 @@
                 <span class="step-num">01</span>
                 <div class="step-body">
                   <h3>Pick your blocked apps</h3>
-                  <p>Choose any installed app. A safety list permanently excludes your dialer, launcher, settings, and camera so you can never brick your phone.</p>
+                  <p>Choose any installed app. A safety list permanently excludes your dialer, messaging app, launcher, and settings so you can never brick your phone.</p>
                 </div>
               </li>
               <li>
                 <span class="step-num">02</span>
                 <div class="step-body">
                   <h3>Write an NFC tag or generate a QR code</h3>
-                  <p>TapBlok writes its token to any NTAG213 tag in seconds. Prefer QR? Generate one in-app and print it or hide it somewhere inconvenient.</p>
+                  <p>TapBlok writes its token to any NDEF-compatible tag (NTAG213, 215, or 216) in seconds. Prefer QR? Generate one in-app and print it or hide it somewhere inconvenient.</p>
                 </div>
               </li>
               <li>
@@ -671,7 +738,7 @@
           <div class="feature-item">
             <p class="feature-label">Unlock</p>
             <h3>NFC Tag</h3>
-            <p>Write TapBlok's token to any NTAG213 tag. Tap it to start and stop monitoring.</p>
+            <p>Write TapBlok's token to any NDEF-compatible tag. Tap it to start and stop monitoring.</p>
           </div>
           <div class="feature-item">
             <p class="feature-label">Unlock</p>
@@ -744,7 +811,7 @@
               <tr><td>Platform</td><td>Android 7.0 (API 24) and up</td></tr>
               <tr><td>Unlock methods</td><td>NFC tag, QR code scan</td></tr>
               <tr><td>Triggers</td><td>Manual, NFC, QR, schedule, Tasker/Routines broadcast</td></tr>
-              <tr><td>Permissions</td><td>Usage stats, draw over other apps, foreground service</td></tr>
+              <tr><td>Permissions</td><td>Usage stats, draw over other apps, foreground service, camera (QR scanning), notifications</td></tr>
               <tr><td>Data collection</td><td>None</td></tr>
               <tr><td>Internet</td><td>Not required</td></tr>
               <tr><td>Price</td><td>Free, no in-app purchases</td></tr>
@@ -790,19 +857,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>Price</td><td class="highlight"><span class="price-tag">Free</span></td><td>$99/device</td><td>$59.99/yr</td><td>$3.99/mo</td><td>$19.99/yr</td></tr>
-              <tr><td>Android Support</td><td class="highlight"><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="check">Yes</span></td><td><span class="check">Yes</span></td></tr>
+              <tr><td>Price</td><td class="highlight"><span class="price-tag">Free</span></td><td>$59 device</td><td>$99.99/yr</td><td>$39.99/yr</td><td>$19/yr</td></tr>
+              <tr><td>Android Support</td><td class="highlight"><span class="check">Yes</span></td><td><span class="check">Yes</span> (12+)</td><td>Limited</td><td><span class="check">Yes</span></td><td><span class="check">Yes</span></td></tr>
               <tr><td>NFC Physical Unlock</td><td class="highlight"><span class="check">Yes</span></td><td><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
               <tr><td>QR Code Unlock</td><td class="highlight"><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
-              <tr><td>No Subscription</td><td class="highlight"><span class="check">Yes</span></td><td><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
+              <tr><td>No Subscription</td><td class="highlight"><span class="check">Yes</span></td><td><span class="check">Yes</span></td><td>Lifetime tier only</td><td>Lifetime tier only</td><td>Lifetime tier only</td></tr>
               <tr><td>Open Source</td><td class="highlight"><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
-              <tr><td>No Cloud / No Tracking</td><td class="highlight"><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
-              <tr><td>Break System</td><td class="highlight"><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
-              <tr><td>Boot Persistence</td><td class="highlight"><span class="check">Yes</span></td><td><span class="check">Yes</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td><td><span class="cross">No</span></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="table-note reveal">Comparison based on publicly listed product details as of early 2026. Prices may vary.</p>
+        <p class="table-note reveal">Comparison based on publicly listed product details as of July 2026. Prices vary by region and promotion — check each product's site for current pricing.</p>
       </div>
     </section>
 
@@ -855,7 +919,7 @@
               <li class="faq-item">
                 <button class="faq-q">Does TapBlok block system apps? <span class="faq-marker">+</span></button>
                 <div class="faq-a">
-                  <p>No. A built-in safety list permanently excludes your dialer, SMS app, settings, camera, and launcher. You cannot accidentally make your phone unusable.</p>
+                  <p>No. A built-in safety list permanently excludes your dialer, SMS app, settings, system UI, and launcher. You cannot accidentally make your phone unusable.</p>
                 </div>
               </li>
 
