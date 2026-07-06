@@ -120,7 +120,7 @@ fun MainScreen() {
     val qrCodeScannerLauncher = rememberLauncherForActivityResult(
         contract = ScanContract()
     ) { result ->
-        if (result.contents == QrCodeActivity.QR_CODE_CONTENT) {
+        if (result.contents == QrCodeActivity.getOrCreateToken(context)) {
             if (isServiceRunning) {
                 context.stopService(Intent(context, AppMonitoringService::class.java))
                 Toast.makeText(context, "Monitoring stopped.", Toast.LENGTH_SHORT).show()
@@ -130,6 +130,12 @@ fun MainScreen() {
                 Toast.makeText(context, "Monitoring started.", Toast.LENGTH_SHORT).show()
                 isServiceRunning = true
             }
+        } else if (result.contents == QrCodeActivity.LEGACY_QR_CONTENT) {
+            Toast.makeText(
+                context,
+                "That QR code is from an older TapBlok version. Print a new one from \"Show QR Code\".",
+                Toast.LENGTH_LONG
+            ).show()
         } else if (result.contents != null) {
             Toast.makeText(context, "Incorrect QR Code", Toast.LENGTH_SHORT).show()
         }
@@ -281,15 +287,19 @@ fun MainScreen() {
                             onClick = { context.startActivity(Intent(context, AppSelectionActivity::class.java)) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        // Both disabled during a session so a new unlock credential can't
+                        // be minted while blocking is active
                         ActionRow(
                             icon = Icons.Default.Nfc,
                             label = "Write NFC Tag",
+                            enabled = !isServiceRunning,
                             onClick = { context.startActivity(Intent(context, NfcWriteActivity::class.java)) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                         ActionRow(
                             icon = Icons.Default.QrCode2,
                             label = "Show QR Code",
+                            enabled = !isServiceRunning,
                             onClick = { context.startActivity(Intent(context, QrCodeActivity::class.java)) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
