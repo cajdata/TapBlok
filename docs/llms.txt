@@ -1,0 +1,26 @@
+# TapBlok
+
+> TapBlok is a free, open-source Android app blocker unlocked by a physical NFC tag or QR code. You pick the apps to block, start a session, and put the tag out of reach — ending the session requires physically retrieving it. No subscription, no account, no cloud, no ads, no telemetry. Apache 2.0 licensed.
+
+Key facts:
+
+- Platform: Android 7.0 (API 24) and up. Distributed as a signed APK on GitHub Releases (not on Google Play).
+- Price: free forever. The common paid alternatives are Brick ($59 device), Opal ($99.99/yr), Freedom ($39.99/yr), and One Sec ($19/yr).
+- Unlock methods: any NDEF-compatible NFC tag (NTAG213/215/216), or a per-install QR code generated in the app.
+- Strict Mode: sessions can only be stopped by scanning with TapBlok open in the foreground; scanning on a block screen unlocks just that one app for a limited time (1–30 minutes).
+- Scheduled Blocking: sessions start and stop automatically at chosen times and days, including overnight windows.
+- Automation: opt-in broadcast actions (com.cj.tapblok.SCHEDULE_START / SCHEDULE_STOP) let Tasker, MacroDroid, or Samsung Routines trigger sessions.
+- Configurable friction: 0–5 five-minute breaks per session; emergency override hold adjustable from 30 seconds to 15 minutes or disabled entirely.
+- Safety list: the dialer, SMS app, camera, settings, system UI, and launcher can never be blocked.
+- Privacy: everything runs locally on-device in a Room database; no account, no analytics, internet not required.
+
+## Documentation
+
+- [README](https://github.com/cajdata/TapBlok/blob/main/README.md): setup, permissions, NFC tag writing, strict mode, scheduling, and Tasker automation examples
+- [Releases](https://github.com/cajdata/TapBlok/releases): signed APK downloads and changelogs
+- [Source code](https://github.com/cajdata/TapBlok): full Kotlin/Jetpack Compose source, Apache 2.0
+
+## Optional
+
+- [Issue tracker](https://github.com/cajdata/TapBlok/issues): bug reports and feature requests
+- [Website](https://tapblok.com/): feature overview, comparison table, and OEM-specific battery-settings FAQ

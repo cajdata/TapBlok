@@ -42,10 +42,10 @@
 
 ## ✨ Features
 
-- **🏷️ NFC Tag Support** — Write TapBlok's token to any NTAG213 tag (under $1 each). Tap to toggle a session.
+- **🏷️ NFC Tag Support** — Write TapBlok's token to any NDEF-compatible tag (NTAG213/215/216, under $1 each). Tap to toggle a session.
 - **📷 QR Code Support** — Generate a QR code in-app and print it. Hide it somewhere that requires real effort to reach. Every install gets its own unique code.
 - **🔐 Strict Mode** — Sessions can only be stopped by scanning with TapBlok open. Scanning on a block screen grants a short timed unlock for that one app instead of ending the session.
-- **🔒 Block Any App** — Choose any launchable app on your device. Critical system apps (dialer, settings, launcher) are permanently excluded so you can't lock yourself out.
+- **🔒 Block Any App** — Choose any launchable app on your device. Critical system apps (dialer, camera, settings, launcher) are permanently excluded so you can't lock yourself out.
 - **☕ Smart Breaks** — Take five-minute breaks without ending the session. Choose how many per session (0–5) in Settings.
 - **🔁 Boot Persistence** — If your device restarts mid-session, TapBlok picks right back up.
 - **🚨 Emergency Override** — Lost your tag? A hold-to-stop last resort. Set the hold anywhere from 30 seconds to 15 minutes, or disable it entirely for strict sessions.
