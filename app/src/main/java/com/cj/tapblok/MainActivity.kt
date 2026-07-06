@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
@@ -80,6 +81,10 @@ fun MainScreen() {
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
+
+    val appPrefs = remember { AppSettings.prefs(context) }
+    var overrideEnabled by remember { mutableStateOf(appPrefs.getBoolean(AppSettings.KEY_OVERRIDE_ENABLED, true)) }
+    var overrideSeconds by remember { mutableStateOf(appPrefs.getInt(AppSettings.KEY_OVERRIDE_SECONDS, AppSettings.DEFAULT_OVERRIDE_SECONDS)) }
 
     var holdProgress by remember { mutableStateOf(0f) }
     var isHolding by remember { mutableStateOf(false) }
@@ -146,6 +151,8 @@ fun MainScreen() {
                     isServiceRunning = true
                 }
                 blockedAppAttempts = prefs.getInt("blocked_app_attempts", 0)
+                overrideEnabled = prefs.getBoolean(AppSettings.KEY_OVERRIDE_ENABLED, true)
+                overrideSeconds = prefs.getInt(AppSettings.KEY_OVERRIDE_SECONDS, AppSettings.DEFAULT_OVERRIDE_SECONDS)
                 hasCameraPermission = ContextCompat.checkSelfPermission(
                     context, Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
@@ -158,7 +165,7 @@ fun MainScreen() {
     LaunchedEffect(isHolding) {
         if (isHolding) {
             val startTime = System.currentTimeMillis()
-            val duration = 90000L
+            val duration = overrideSeconds * 1000L
             while (isHolding && System.currentTimeMillis() - startTime < duration) {
                 holdProgress = (System.currentTimeMillis() - startTime) / duration.toFloat()
                 delay(50)
@@ -297,11 +304,17 @@ fun MainScreen() {
                                 }
                             }
                         )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        ActionRow(
+                            icon = Icons.Default.Tune,
+                            label = "Settings",
+                            onClick = { context.startActivity(Intent(context, SettingsActivity::class.java)) }
+                        )
                     }
                 }
 
                 // Emergency stop
-                if (isServiceRunning) {
+                if (isServiceRunning && overrideEnabled) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "Emergency Override",
@@ -329,8 +342,9 @@ fun MainScreen() {
                                 color = MaterialTheme.colorScheme.error,
                                 trackColor = MaterialTheme.colorScheme.errorContainer
                             )
+                            val overrideLabel = if (overrideSeconds % 60 == 0) "${overrideSeconds / 60}m" else "${overrideSeconds}s"
                             Text(
-                                text = "HOLD 90s TO FORCE STOP",
+                                text = "HOLD $overrideLabel TO FORCE STOP",
                                 modifier = Modifier.align(Alignment.Center),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (holdProgress > 0.5f) MaterialTheme.colorScheme.onError
