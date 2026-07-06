@@ -641,7 +641,7 @@
                 <span class="step-num">04</span>
                 <div class="step-body">
                   <h3>Take a break if needed</h3>
-                  <p>Three 5-minute pauses per session. They reset when the session ends.</p>
+                  <p>5-minute pauses that reset when the session ends. Choose zero to five per session in Settings.</p>
                 </div>
               </li>
             </ol>
@@ -686,7 +686,7 @@
           <div class="feature-item">
             <p class="feature-label">Session</p>
             <h3>Smart Breaks</h3>
-            <p>Three 5-minute pauses per session. Designed for quick checks that won't derail focus.</p>
+            <p>5-minute pauses for quick checks that won't derail focus. Choose zero to five per session.</p>
           </div>
           <div class="feature-item">
             <p class="feature-label">Reliability</p>
@@ -696,7 +696,22 @@
           <div class="feature-item">
             <p class="feature-label">Safety</p>
             <h3>Emergency Override</h3>
-            <p>Lost your tag? A 90-second hold stops the session. Deliberately slow to prevent impulse bypassing.</p>
+            <p>Lost your tag? A slow hold stops the session — 30 seconds to 15 minutes, your choice. Or disable it entirely.</p>
+          </div>
+          <div class="feature-item">
+            <p class="feature-label">Automation</p>
+            <h3>Scheduled Blocking</h3>
+            <p>Sessions start and stop on their own at the times and days you pick. Set 10 pm to 7 am and sleep instead of scroll.</p>
+          </div>
+          <div class="feature-item">
+            <p class="feature-label">Discipline</p>
+            <h3>Strict Mode</h3>
+            <p>Stopping a session requires scanning with TapBlok open. Scanning on a block screen unlocks just that one app, briefly.</p>
+          </div>
+          <div class="feature-item">
+            <p class="feature-label">Integration</p>
+            <h3>Tasker &amp; Routines</h3>
+            <p>Opt-in broadcast actions let Tasker, MacroDroid, or Samsung Routines trigger blocking — by location, calendar, anything.</p>
           </div>
           <div class="feature-item">
             <p class="feature-label">Awareness</p>
@@ -728,6 +743,7 @@
             <table class="specs">
               <tr><td>Platform</td><td>Android 7.0 (API 24) and up</td></tr>
               <tr><td>Unlock methods</td><td>NFC tag, QR code scan</td></tr>
+              <tr><td>Triggers</td><td>Manual, NFC, QR, schedule, Tasker/Routines broadcast</td></tr>
               <tr><td>Permissions</td><td>Usage stats, draw over other apps, foreground service</td></tr>
               <tr><td>Data collection</td><td>None</td></tr>
               <tr><td>Internet</td><td>Not required</td></tr>
@@ -818,7 +834,21 @@
               <li class="faq-item">
                 <button class="faq-q">Can I bypass TapBlok without the tag? <span class="faq-marker">+</span></button>
                 <div class="faq-a">
-                  <p>There is a 90-second emergency hold for situations where a tag is genuinely lost. The intentionally slow hold makes impulse bypassing hard. A QR code is also always available as a backup unlock method.</p>
+                  <p>By default there's a 90-second emergency hold for situations where a tag is genuinely lost — slow enough to stop impulse bypassing. If that's still too easy, Settings lets you stretch the hold to 15 minutes or disable it completely, and Strict Mode requires scanning with TapBlok open to stop a session. Combine those with zero breaks and the only way out is the tag or printed QR code you stashed across the room.</p>
+                </div>
+              </li>
+
+              <li class="faq-item">
+                <button class="faq-q">Can blocking start automatically? <span class="faq-marker">+</span></button>
+                <div class="faq-a">
+                  <p>Yes. Settings &rarr; Scheduled Blocking starts sessions at a set time on the days you choose, with an optional auto-stop time — overnight windows like 22:00 to 07:00 work fine. Automation apps (Tasker, MacroDroid, Samsung Routines) can also start or stop sessions via broadcast if you enable the opt-in toggle; setup examples are in the GitHub README.</p>
+                </div>
+              </li>
+
+              <li class="faq-item">
+                <button class="faq-q">My printed QR code stopped working after updating? <span class="faq-marker">+</span></button>
+                <div class="faq-a">
+                  <p>As of v1.5.0, every install generates its own unique QR code — the old shared code was public in the source, so anyone could print a working unlock. Open "Show QR Code" and print a fresh one. NFC tags are unaffected and keep working as-is.</p>
                 </div>
               </li>
 
