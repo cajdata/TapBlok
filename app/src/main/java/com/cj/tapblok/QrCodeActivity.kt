@@ -1,5 +1,6 @@
 package com.cj.tapblok
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
 import com.cj.tapblok.ui.theme.TapBlokTheme
 import com.google.zxing.BarcodeFormat
@@ -26,11 +28,26 @@ import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.security.SecureRandom
 
 class QrCodeActivity : ComponentActivity() {
 
     companion object {
-        const val QR_CODE_CONTENT = "TAPBLOK_TOGGLE"
+        // The shared constant every install used before v1.5.0 — recognised only to
+        // tell users their printed code needs regenerating
+        const val LEGACY_QR_CONTENT = "TAPBLOK_TOGGLE"
+        private const val TOKEN_PREFIX = "TAPBLOK:"
+
+        // Generated once per install, so a QR printed from the repo or from someone
+        // else's phone can't control this device
+        fun getOrCreateToken(context: Context): String {
+            val prefs = AppSettings.prefs(context)
+            prefs.getString(AppSettings.KEY_QR_TOKEN, null)?.let { return it }
+            val bytes = ByteArray(16).also { SecureRandom().nextBytes(it) }
+            val token = TOKEN_PREFIX + bytes.joinToString("") { "%02x".format(it) }
+            prefs.edit { putString(AppSettings.KEY_QR_TOKEN, token) }
+            return token
+        }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +69,7 @@ class QrCodeActivity : ComponentActivity() {
                 ) { padding ->
                     QrCodeScreen(
                         modifier = Modifier.padding(padding),
-                        content = QR_CODE_CONTENT
+                        content = getOrCreateToken(this)
                     )
                 }
             }
@@ -100,7 +117,8 @@ fun QrCodeScreen(modifier: Modifier = Modifier, content: String) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "Scan this code to start or stop a monitoring session.",
+            text = "Scan this code to start or stop a monitoring session. " +
+                    "It's unique to this install — print it and keep it somewhere that takes effort to reach.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
