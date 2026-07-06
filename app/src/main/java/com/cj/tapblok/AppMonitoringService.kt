@@ -1,10 +1,13 @@
 package com.cj.tapblok
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.app.Service
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.provider.Settings
@@ -28,11 +31,14 @@ class AppMonitoringService : Service() {
     @Volatile private var isBreakActive = false
     private var isMonitoring = false
     private var breakTimer: CountDownTimer? = null
+    private var lastEventTimestamp = 0L
+    private var currentForegroundApp: String? = null
 
     companion object {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "app_monitoring_channel"
         const val ACTION_START_BREAK = "com.cj.tapblok.ACTION_START_BREAK"
+        private const val INITIAL_EVENT_LOOKBACK_MS = 60 * 60 * 1000L
         @Volatile var isRunning = false
     }
 
@@ -46,7 +52,9 @@ class AppMonitoringService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_START_BREAK) {
             startBreak()
-            return START_NOT_STICKY
+            // The last onStartCommand return value governs restart-after-kill behaviour,
+            // so a break must not downgrade the service to non-sticky
+            return START_STICKY
         }
 
         Log.d("AppMonitoringService", "Service has started.")
@@ -145,19 +153,48 @@ class AppMonitoringService : Service() {
         Log.d("AppMonitoringService", "Service has been destroyed.")
     }
 
+    // Some launchers kill the process when the app's task is swiped away; schedule a
+    // restart so an active session survives "clear all apps"
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (prefs.getBoolean("monitoring_active", false)) {
+            val restartIntent = Intent(applicationContext, AppMonitoringService::class.java)
+            val flags = PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                PendingIntent.getForegroundService(this, 1, restartIntent, flags)
+            } else {
+                PendingIntent.getService(this, 1, restartIntent, flags)
+            }
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 1000, pendingIntent)
+            Log.d("AppMonitoringService", "Task removed — scheduled service restart.")
+        }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
 
+    // Usage events are the reliable way to track the foreground app. queryUsageStats over a
+    // short window misses apps that were already in the foreground before the session began
+    // (no new stats update = invisible), which let blocked apps slip through.
+    @Suppress("DEPRECATION") // MOVE_TO_FOREGROUND == ACTIVITY_RESUMED; the old name also covers pre-API-29 devices
     private fun getForegroundApp(): String? {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        val time = System.currentTimeMillis()
-        val appList = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            time - 1000 * 10,
-            time
-        )
-        return appList?.maxByOrNull { it.lastTimeUsed }?.packageName
+        val now = System.currentTimeMillis()
+        val begin = if (lastEventTimestamp == 0L) now - INITIAL_EVENT_LOOKBACK_MS else lastEventTimestamp + 1
+        val events = usageStatsManager.queryEvents(begin, now)
+        val event = UsageEvents.Event()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                currentForegroundApp = event.packageName
+            }
+            if (event.timeStamp > lastEventTimestamp) {
+                lastEventTimestamp = event.timeStamp
+            }
+        }
+        return currentForegroundApp
     }
 }
 
