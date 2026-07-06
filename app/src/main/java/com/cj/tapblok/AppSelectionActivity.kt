@@ -2,6 +2,7 @@ package com.cj.tapblok
 
 import android.app.Application
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -94,7 +97,12 @@ class AppSelectionViewModel(private val blockedAppDao: BlockedAppDao, private va
                     android.util.Log.w("AppSelectionViewModel", "Skipping $packageName: ${e.message}")
                     null
                 }
-            }.sortedBy { it.appName.lowercase() }
+            }
+                // queryIntentActivities returns one entry per launcher activity, so packages
+                // with multiple launcher entries (Tasker, some OEM apps) would duplicate the
+                // LazyColumn key and crash
+                .distinctBy { it.packageName }
+                .sortedBy { it.appName.lowercase() }
 
             blockedAppDao.getAllBlockedApps().collect { blockedApps ->
                 val blockedAppPackages = blockedApps.map { it.packageName }.toSet()
@@ -205,15 +213,33 @@ fun AppSelectionScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LazyColumn(modifier = modifier.padding(all = 8.dp)) {
-        items(apps, key = { it.packageName }) { app ->
-            AppListItem(
-                app = app,
-                onCheckedChange = { isSelected ->
-                    onAppCheckedChange(app, isSelected)
-                },
-                isEnabled = !isServiceRunning
-            )
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val filteredApps = remember(apps, searchQuery) {
+        if (searchQuery.isBlank()) apps
+        else apps.filter { it.appName.contains(searchQuery.trim(), ignoreCase = true) }
+    }
+
+    Column(modifier = modifier.padding(all = 8.dp)) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            placeholder = { Text("Search apps") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true
+        )
+        LazyColumn {
+            items(filteredApps, key = { it.packageName }) { app ->
+                AppListItem(
+                    app = app,
+                    onCheckedChange = { isSelected ->
+                        onAppCheckedChange(app, isSelected)
+                    },
+                    isEnabled = !isServiceRunning
+                )
+            }
         }
     }
 }
@@ -225,6 +251,15 @@ fun AppListItem(
     isEnabled: Boolean
 ) {
     val context = LocalContext.current
+    // Loaded once per row; the app can be uninstalled between list load and render,
+    // in which case getApplicationIcon throws
+    val appIcon = remember(app.packageName) {
+        try {
+            context.packageManager.getApplicationIcon(app.packageName)
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -235,7 +270,7 @@ fun AppListItem(
         Image(
             painter = rememberAsyncImagePainter(
                 model = ImageRequest.Builder(context)
-                    .data(context.packageManager.getApplicationIcon(app.packageName))
+                    .data(appIcon)
                     .build()
             ),
             contentDescription = "${app.appName} icon",
